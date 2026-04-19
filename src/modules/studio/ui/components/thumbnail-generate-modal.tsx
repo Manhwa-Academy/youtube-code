@@ -13,10 +13,6 @@ interface ThumbnailGenerateModalProps {
   onThumbnailUpdate?: (url: string) => void;
 }
 
-interface ThumbnailResponse {
-  thumbnailUrl: string;
-}
-
 export const ThumbnailGenerateModal = ({
   videoId,
   open,
@@ -40,15 +36,11 @@ export const ThumbnailGenerateModal = ({
         throw new Error(errText || "Failed to generate thumbnail");
       }
 
-      // ✅ dùng unknown + kiểm tra trước khi cast
-      const data: unknown = await res.json();
-      if (
-        typeof data === "object" &&
-        data !== null &&
-        "thumbnailUrl" in data &&
-        typeof (data as any).thumbnailUrl === "string"
-      ) {
-        onThumbnailUpdate((data as ThumbnailResponse).thumbnailUrl);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await res.json();
+
+      if (data?.thumbnailUrl && typeof data.thumbnailUrl === "string") {
+        onThumbnailUpdate(data.thumbnailUrl);
       } else {
         throw new Error("Invalid response from server");
       }

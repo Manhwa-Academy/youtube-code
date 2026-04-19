@@ -19,6 +19,7 @@ export const ThumbnailUploadModal = ({
 }: ThumbnailUploadModalProps) => {
   const utils = trpc.useUtils();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onUploadComplete = (res: any) => {
     console.group("=== UploadDropzone Result ===");
     console.log("VideoId:", videoId);

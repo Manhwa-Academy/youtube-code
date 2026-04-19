@@ -1,3 +1,5 @@
+"use server";
+
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { UTApi } from "uploadthing/server";
@@ -12,8 +14,14 @@ import {
 import { db } from "@/db";
 import { mux } from "@/lib/mux";
 import { videos } from "@/db/schema";
+import { InferModel } from "drizzle-orm";
+
+// Type helper cho update video
+type VideoUpdate = Partial<InferModel<typeof videos, "insert">>;
 
 const SIGNING_SECRET = process.env.MUX_WEBHOOK_SECRET!;
+if (!SIGNING_SECRET) throw new Error("MUX_WEBHOOK_SECRET not set");
+
 type WebhookEvent =
   | VideoAssetCreatedWebhookEvent
   | VideoAssetReadyWebhookEvent
@@ -22,8 +30,6 @@ type WebhookEvent =
   | VideoAssetDeletedWebhookEvent;
 
 export const POST = async (request: Request) => {
-  if (!SIGNING_SECRET) throw new Error("MUX_WEBHOOK_SECRET not set");
-
   const headersPayload = await headers();
   const muxSignature = headersPayload.get("mux-signature");
   if (!muxSignature) return new Response("No signature", { status: 401 });
@@ -35,29 +41,30 @@ export const POST = async (request: Request) => {
     return new Response("Invalid JSON", { status: 400 });
   }
 
-  const body = JSON.stringify(payload);
+  // verify signature
   mux.webhooks.verifySignature(
-    body,
+    JSON.stringify(payload),
     { "mux-signature": muxSignature },
-    SIGNING_SECRET,
+    SIGNING_SECRET
   );
 
+  // Helper: update video với type an toàn
   const updateVideo = async (
     muxStatus: string,
-    updateFields: Partial<any> = {},
+    updateFields: VideoUpdate = {},
+    uploadId?: string
   ) => {
+    if (!uploadId) return;
     await db
       .update(videos)
-      .set({ muxStatus, ...updateFields } as any) // ép kiểu cho Drizzle
-      .where(eq(videos.muxUploadId, (payload.data as any).upload_id as string));
+      .set({ muxStatus, ...updateFields })
+      .where(eq(videos.muxUploadId, uploadId));
   };
 
   switch (payload.type) {
     case "video.asset.created": {
       const data = payload.data as VideoAssetCreatedWebhookEvent["data"];
-      await updateVideo(data.status, {
-        muxAssetId: data.id as unknown as string,
-      });
+      await updateVideo(data.status, { muxAssetId: data.id }, data.upload_id);
       console.log("Video created:", data.upload_id);
       break;
     }
@@ -77,19 +84,15 @@ export const POST = async (request: Request) => {
 
       try {
         const utapi = new UTApi();
-
-        // Random time frame 5%-95% của video
         const randomPercent = Math.floor(Math.random() * 90) + 5;
-
-        // Tuỳ chỉnh kích thước thumbnail
         const width = 1280;
         const height = 720;
+
         const [thumb, prev] = await utapi.uploadFilesFromUrl([
-          // Thumbnail PNG với width, height, time
           `https://image.mux.com/${playbackId}/thumbnail.png?width=${width}&height=${height}&time=${randomPercent}`,
-          // Preview GIF
           `https://image.mux.com/${playbackId}/animated.gif`,
         ]);
+
         if (thumb.data) {
           thumbnailUrl = thumb.data.url;
           thumbnailKey = thumb.data.key;
@@ -102,30 +105,35 @@ export const POST = async (request: Request) => {
         console.warn("Thumbnail/preview upload failed:", err);
       }
 
-      await updateVideo("ready", {
-        muxPlaybackId: playbackId,
-        muxAssetId: data.id,
-        thumbnailUrl,
-        thumbnailKey,
-        previewUrl,
-        previewKey,
-        duration,
-      });
+      await updateVideo(
+        "ready",
+        {
+          muxPlaybackId: playbackId,
+          muxAssetId: data.id,
+          thumbnailUrl,
+          thumbnailKey,
+          previewUrl,
+          previewKey,
+          duration,
+        },
+        data.upload_id
+      );
 
       console.log("Video ready:", data.upload_id);
       break;
     }
 
     case "video.asset.errored": {
-      await updateVideo("errored");
+      const data = payload.data as VideoAssetErroredWebhookEvent["data"];
+      await updateVideo("errored", {}, data.upload_id);
       break;
     }
 
     case "video.asset.deleted": {
       const data = payload.data as VideoAssetDeletedWebhookEvent["data"];
-      await db
-        .delete(videos)
-        .where(eq(videos.muxUploadId, data.upload_id as string));
+      if (data.upload_id) {
+        await db.delete(videos).where(eq(videos.muxUploadId, data.upload_id));
+      }
       console.log("Video deleted:", data.upload_id);
       break;
     }
@@ -137,10 +145,10 @@ export const POST = async (request: Request) => {
       await db
         .update(videos)
         .set({
-          muxTrackId: data.id as unknown as string,
-          muxTrackStatus: data.status as unknown as string,
+          muxTrackId: data.id,
+          muxTrackStatus: data.status,
         })
-        .where(eq(videos.muxAssetId, data.asset_id as string));
+        .where(eq(videos.muxAssetId, data.asset_id));
       console.log("Track ready:", data.asset_id);
       break;
     }

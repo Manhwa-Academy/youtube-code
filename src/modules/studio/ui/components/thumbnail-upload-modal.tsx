@@ -4,6 +4,15 @@ import { trpc } from "@/trpc/client";
 import { UploadDropzone } from "@/lib/uploadthing";
 import { ResponsiveModal } from "@/components/responsive-modal";
 
+// Tạo type custom cho UploadDropzone response
+interface UploadedFile {
+  key: string; // file key trên UploadThing
+  url: string; // URL file upload
+  name?: string;
+  size?: number;
+  type?: string;
+}
+
 interface ThumbnailUploadModalProps {
   videoId: string;
   open: boolean;
@@ -19,15 +28,13 @@ export const ThumbnailUploadModal = ({
 }: ThumbnailUploadModalProps) => {
   const utils = trpc.useUtils();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onUploadComplete = (res: any) => {
+  const onUploadComplete = (res: UploadedFile[]) => {
     console.group("=== UploadDropzone Result ===");
     console.log("VideoId:", videoId);
     console.log("Raw Upload response:", res);
     console.groupEnd();
 
-    // Với UploadThing v3+, response nằm trong res[0].data
-    const uploaded = Array.isArray(res) ? res[0]?.data : res?.data;
+    const uploaded = res[0]; // Lấy file đầu tiên (thumbnail)
 
     if (!uploaded?.key || !uploaded?.url) {
       console.error("UploadDropzone: Invalid upload response", res);
@@ -41,9 +48,7 @@ export const ThumbnailUploadModal = ({
     utils.studio.getOne.invalidate({ id: videoId });
 
     // Callback để cập nhật ngay thumbnail ở form
-    if (onThumbnailUpdate) {
-      onThumbnailUpdate(uploaded.url);
-    }
+    onThumbnailUpdate?.(uploaded.url);
 
     // Đóng modal
     onOpenChange(false);

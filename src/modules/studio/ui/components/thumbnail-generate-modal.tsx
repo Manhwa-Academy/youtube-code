@@ -9,15 +9,19 @@ import { useAuth } from "@clerk/nextjs";
 interface ThumbnailGenerateModalProps {
   videoId: string;
   open: boolean;
-  onOpenChange?: (open: boolean) => void; // đồng bộ prop
+  onOpenChange?: (open: boolean) => void;
   onThumbnailUpdate?: (url: string) => void;
+}
+
+interface ThumbnailResponse {
+  thumbnailUrl: string;
 }
 
 export const ThumbnailGenerateModal = ({
   videoId,
   open,
-  onOpenChange = () => {}, // default rỗng
-  onThumbnailUpdate = () => {}, // default rỗng
+  onOpenChange = () => {},
+  onThumbnailUpdate = () => {},
 }: ThumbnailGenerateModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { userId: clerkId } = useAuth();
@@ -36,10 +40,9 @@ export const ThumbnailGenerateModal = ({
         throw new Error(errText || "Failed to generate thumbnail");
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await res.json();
+      const data: ThumbnailResponse = await res.json();
 
-      if (data?.thumbnailUrl && typeof data.thumbnailUrl === "string") {
+      if (typeof data.thumbnailUrl === "string") {
         onThumbnailUpdate(data.thumbnailUrl);
       } else {
         throw new Error("Invalid response from server");
@@ -48,7 +51,7 @@ export const ThumbnailGenerateModal = ({
       toast.success(
         "Thumbnail generated from video! ⏳ Uploading… it will appear shortly.",
       );
-      onOpenChange(false); // đóng modal
+      onOpenChange(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error("Failed to generate thumbnail: " + err.message);

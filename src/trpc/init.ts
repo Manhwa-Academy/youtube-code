@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
 import { users } from "@/db/schema";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient, User as ClerkUser } from "@clerk/nextjs/server";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { cache } from "react";
 import superjson from "superjson";
@@ -20,7 +20,6 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
 });
 
-// Router và procedure helpers
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
@@ -34,18 +33,17 @@ export const protectedProcedure = t.procedure.use(
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 
-    // Lấy thông tin từ Clerk
-    const client = await clerkClient(); // <-- quan trọng: await
-    const clerkUser = await client.users.getUser(ctx.clerkUserId);
+    const client = await clerkClient();
+    const clerkUser: ClerkUser = await client.users.getUser(ctx.clerkUserId);
 
     // Lấy tên và avatar an toàn
     const name = clerkUser.fullName || "Anonymous";
 
-    // Clerk v4: ảnh đại diện nằm trong `imageUrl` hoặc `profileImageUrl`
     const imageUrl =
-      (clerkUser as any).profileImageUrl ||
-      clerkUser.imageUrl ||
-      "/default-avatar.png";
+      "profileImageUrl" in clerkUser &&
+      typeof clerkUser.profileImageUrl === "string"
+        ? clerkUser.profileImageUrl
+        : clerkUser.imageUrl || "/default-avatar.png";
 
     // Tìm user trong DB
     let [user] = await db

@@ -128,6 +128,45 @@ export const FormSectionSkeleton = () => {
     </div>
   );
 };
+// Thêm lên đầu file, trước FormSection
+const WORKFLOW_TITLE_ID = "f9b76807-17e3-451e-892f-95cdb165d5db"; // ID workflow tạo title
+const WORKFLOW_DESC_ID = "f9b76807-17e3-451e-892f-95cdb165d5db"; // ID workflow tạo description
+
+// Hàm poll workflow
+const pollWorkflow = async (
+  workflowRunId: string,
+  workflowId: string,
+  interval = 2000,
+  timeout = 60000,
+): Promise<{ title?: string; description?: string }> => {
+  const start = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const check = async () => {
+      const elapsed = Date.now() - start;
+      if (elapsed > timeout) return reject(new Error("Workflow timeout"));
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_UPSTASH_WORKFLOW_URL}/workflows/${workflowId}/runs/${workflowRunId}`,
+        );
+        const data = await res.json();
+
+        if (data.status === "completed") {
+          resolve({ title: data.title, description: data.description });
+        } else if (data.status === "failed") {
+          reject(new Error("Workflow failed"));
+        } else {
+          setTimeout(check, interval);
+        }
+      } catch {
+        setTimeout(check, interval);
+      }
+    };
+
+    check();
+  });
+};
 
 const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
   const router = useRouter();
@@ -136,7 +175,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
   const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
   const [thumbnailGenerateModalOpen, setThumbnailGenerateModalOpen] =
     useState(false);
-
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [video] = trpc.studio.getOne.useSuspenseQuery({ id: videoId });
   const [categories] = trpc.categories.getMany.useSuspenseQuery();
 
@@ -173,27 +212,23 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     },
   });
 
-  const generateDescription = trpc.videos.generateDescription.useMutation({
-    onSuccess: () => {
-      toast.success("Background job started", {
-        description: "This may take some time",
-      });
-    },
-    onError: () => {
-      toast.error("Something went wrong");
-    },
-  });
-  const generateTitle = trpc.videos.generateTitle.useMutation({
-    onSuccess: () => {
-      toast.success("Background job started", {
-        description: "This may take some time",
-      });
-    },
-    onError: () => {
-      toast.error("Something went wrong");
-    },
-  });
+  const generateDescriptionMutation =
+    trpc.videos.generateDescription.useMutation({
+      onSuccess: () => {
+        // invalidate query để fetch dữ liệu mới
+        utils.studio.getOne.invalidate({ id: videoId });
+        toast.success("Description generation started");
+      },
+      onError: () => toast.error("Failed to generate description"),
+    });
 
+  const generateTitleMutation = trpc.videos.generateTitle.useMutation({
+    onSuccess: () => {
+      utils.studio.getOne.invalidate({ id: videoId });
+      toast.success("Title generation started");
+    },
+    onError: () => toast.error("Failed to generate title"),
+  });
   const restoreThumbnail = trpc.videos.restoreThumbnail.useMutation({
     onSuccess: () => {
       utils.studio.getMany.invalidate();
@@ -230,7 +265,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     <>
       <ThumbnailGenerateModal
         open={thumbnailGenerateModalOpen}
-        onOpenChange={setThumbnailGenerateModalOpen}
+        onOpenChange={(open) => setThumbnailGenerateModalOpen(open)} // ✅ đảm bảo là hàm
         videoId={videoId}
         onThumbnailUpdate={(url) => form.setValue("thumbnailUrl", url)}
       />
@@ -286,25 +321,11 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      <div className="flex items-center gap-x-2">
-                        Title
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          type="button"
-                          className="rounded-full size-6 [&_svg]:size-3"
-                          onClick={() => generateTitle.mutate({ id: videoId })}
-                          disabled={
-                            generateTitle.isPending || !video.muxTrackId
-                          }
-                        >
-                          {generateTitle.isPending ? (
-                            <Loader2Icon className="animate-spin" />
-                          ) : (
-                            <SparklesIcon />
-                          )}
-                        </Button>
-                      </div>
+                      Title
+                      {/* Bỏ Button tạo AI đi, chỉ giữ label */}
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        (AI-generated available)
+                      </span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -322,27 +343,10 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      <div className="flex items-center gap-x-2">
-                        Description
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          type="button"
-                          className="rounded-full size-6 [&_svg]:size-3"
-                          onClick={() =>
-                            generateDescription.mutate({ id: videoId })
-                          }
-                          disabled={
-                            generateDescription.isPending || !video.muxTrackId
-                          }
-                        >
-                          {generateDescription.isPending ? (
-                            <Loader2Icon className="animate-spin" />
-                          ) : (
-                            <SparklesIcon />
-                          )}
-                        </Button>
-                      </div>
+                      Description
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        (AI-generated available)
+                      </span>
                     </FormLabel>
                     <FormControl>
                       <Textarea
@@ -371,6 +375,13 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                           fill
                           alt="Thumbnail"
                         />
+
+                        {thumbnailUploading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white font-bold z-10 text-sm">
+                            Uploading thumbnail...
+                          </div>
+                        )}
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

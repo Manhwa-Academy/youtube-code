@@ -82,9 +82,8 @@ export const POST = async (request: Request) => {
         const randomPercent = Math.floor(Math.random() * 90) + 5;
 
         // Tuỳ chỉnh kích thước thumbnail
-        const width = 640; // hoặc 720, 1080 tuỳ ý
-        const height = 360; // giữ tỉ lệ 16:9
-
+        const width = 1280;
+        const height = 720;
         const [thumb, prev] = await utapi.uploadFilesFromUrl([
           // Thumbnail PNG với width, height, time
           `https://image.mux.com/${playbackId}/thumbnail.png?width=${width}&height=${height}&time=${randomPercent}`,

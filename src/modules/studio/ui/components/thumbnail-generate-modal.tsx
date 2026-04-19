@@ -4,58 +4,81 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-modal";
+import { useAuth } from "@clerk/nextjs";
 
 interface ThumbnailGenerateModalProps {
   videoId: string;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void; // đồng bộ prop
   onThumbnailUpdate?: (url: string) => void;
+}
+
+interface ThumbnailResponse {
+  thumbnailUrl: string;
 }
 
 export const ThumbnailGenerateModal = ({
   videoId,
   open,
-  onOpenChange,
-  onThumbnailUpdate,
+  onOpenChange = () => {}, // default rỗng
+  onThumbnailUpdate = () => {}, // default rỗng
 }: ThumbnailGenerateModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { userId: clerkId } = useAuth();
 
   const generateFromVideo = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/videos/generateThumbnailFromVideo", {
+      const res = await fetch("/api/videos/workflows/thumbnail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoId }),
+        body: JSON.stringify({ videoId, clerkId, useVideoFrame: true }),
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
+        const errText = await res.text();
+        throw new Error(errText || "Failed to generate thumbnail");
       }
 
-      const data = await res.json();
-
-      toast.success("Thumbnail generated from video!");
-
-      if (onThumbnailUpdate && data.thumbnailUrl) {
-        onThumbnailUpdate(data.thumbnailUrl);
+      // ✅ dùng unknown + kiểm tra trước khi cast
+      const data: unknown = await res.json();
+      if (
+        typeof data === "object" &&
+        data !== null &&
+        "thumbnailUrl" in data &&
+        typeof (data as any).thumbnailUrl === "string"
+      ) {
+        onThumbnailUpdate((data as ThumbnailResponse).thumbnailUrl);
+      } else {
+        throw new Error("Invalid response from server");
       }
 
-      onOpenChange(false);
-    } catch (err: any) {
-      console.error("Generate thumbnail error:", err);
-      toast.error("Failed to generate thumbnail: " + (err.message || ""));
+      toast.success(
+        "Thumbnail generated from video! ⏳ Uploading… it will appear shortly.",
+      );
+      onOpenChange(false); // đóng modal
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error("Failed to generate thumbnail: " + err.message);
+        console.error("Generate thumbnail error:", err);
+      } else {
+        toast.error("Failed to generate thumbnail: Unknown error");
+        console.error("Generate thumbnail unknown error:", err);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <ResponsiveModal title="Generate a thumbnail from video" open={open} onOpenChange={onOpenChange}>
+    <ResponsiveModal
+      title="Tạo thumbnail từ video"
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <div className="flex justify-end p-4">
         <Button onClick={generateFromVideo} disabled={isLoading}>
-          {isLoading ? "Generating..." : "Generate"}
+          {isLoading ? "Đang tạo..." : "Tạo thumbnail"}
         </Button>
       </div>
     </ResponsiveModal>

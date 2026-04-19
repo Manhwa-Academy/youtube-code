@@ -349,29 +349,30 @@ export const videosRouter = createTRPCRouter({
 
       return existingVideo;
     }),
-  generateDescription: protectedProcedure
-    .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const { id: userId } = ctx.user;
-
-      const { workflowRunId } = await workflow.trigger({
-        url: `${process.env.UPSTASH_WORKFLOW_URL}/api/videos/workflows/description`,
-        body: { userId, videoId: input.id },
-      });
-
-      return workflowRunId;
-    }),
   generateTitle: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user;
 
       const { workflowRunId } = await workflow.trigger({
-        url: `${process.env.UPSTASH_WORKFLOW_URL}/api/videos/workflows/title`,
+        url: `${process.env.UPSTASH_WORKFLOW_URL}/workflows/f9b76807-17e3-451e-892f-95cdb165d5db/runs`,
         body: { userId, videoId: input.id },
       });
 
-      return workflowRunId;
+      return { workflowRunId };
+    }),
+
+  generateDescription: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const { id: userId } = ctx.user;
+
+      const { workflowRunId } = await workflow.trigger({
+        url: `${process.env.UPSTASH_WORKFLOW_URL}/workflows/f9b76807-17e3-451e-892f-95cdb165d5db/runs`,
+        body: { userId, videoId: input.id },
+      });
+
+      return { workflowRunId };
     }),
   generateThumbnail: protectedProcedure
     .input(z.object({ id: z.string().uuid(), prompt: z.string().min(10) }))
@@ -473,8 +474,8 @@ export const videosRouter = createTRPCRouter({
       }
 
       // Random frame URL từ Mux PNG
-      const width = 640; // hoặc 720, 1080 tuỳ ý
-      const height = 360; // giữ tỉ lệ 16:9
+      const width = 1280;
+      const height = 720;
       const randomPercent = Math.floor(Math.random() * 90) + 5;
       const tempThumbnailUrl = `https://image.mux.com/${existingVideo.muxPlaybackId}/thumbnail.png?width=${width}&height=${height}&time=${randomPercent}`;
 

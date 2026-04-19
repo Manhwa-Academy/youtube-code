@@ -129,44 +129,44 @@ export const FormSectionSkeleton = () => {
   );
 };
 // Thêm lên đầu file, trước FormSection
-const WORKFLOW_TITLE_ID = "f9b76807-17e3-451e-892f-95cdb165d5db"; // ID workflow tạo title
-const WORKFLOW_DESC_ID = "f9b76807-17e3-451e-892f-95cdb165d5db"; // ID workflow tạo description
+const _WORKFLOW_TITLE_ID = "f9b76807-17e3-451e-892f-95cdb165d5db"; // ID workflow tạo title
+const _WORKFLOW_DESC_ID = "f9b76807-17e3-451e-892f-95cdb165d5db"; // ID workflow tạo description
 
 // Hàm poll workflow
-const pollWorkflow = async (
-  workflowRunId: string,
-  workflowId: string,
-  interval = 2000,
-  timeout = 60000,
-): Promise<{ title?: string; description?: string }> => {
-  const start = Date.now();
+// const pollWorkflow = async (
+//   workflowRunId: string,
+//   workflowId: string,
+//   interval = 2000,
+//   timeout = 60000,
+// ): Promise<{ title?: string; description?: string }> => {
+//   const start = Date.now();
 
-  return new Promise((resolve, reject) => {
-    const check = async () => {
-      const elapsed = Date.now() - start;
-      if (elapsed > timeout) return reject(new Error("Workflow timeout"));
+//   return new Promise((resolve, reject) => {
+//     const check = async () => {
+//       const elapsed = Date.now() - start;
+//       if (elapsed > timeout) return reject(new Error("Workflow timeout"));
 
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_UPSTASH_WORKFLOW_URL}/workflows/${workflowId}/runs/${workflowRunId}`,
-        );
-        const data = await res.json();
+//       try {
+//         const res = await fetch(
+//           `${process.env.NEXT_PUBLIC_UPSTASH_WORKFLOW_URL}/workflows/${workflowId}/runs/${workflowRunId}`,
+//         );
+//         const data = await res.json();
 
-        if (data.status === "completed") {
-          resolve({ title: data.title, description: data.description });
-        } else if (data.status === "failed") {
-          reject(new Error("Workflow failed"));
-        } else {
-          setTimeout(check, interval);
-        }
-      } catch {
-        setTimeout(check, interval);
-      }
-    };
+//         if (data.status === "completed") {
+//           resolve({ title: data.title, description: data.description });
+//         } else if (data.status === "failed") {
+//           reject(new Error("Workflow failed"));
+//         } else {
+//           setTimeout(check, interval);
+//         }
+//       } catch {
+//         setTimeout(check, interval);
+//       }
+//     };
 
-    check();
-  });
-};
+//     check();
+//   });
+// };
 
 const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
   const router = useRouter();
@@ -175,7 +175,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
   const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
   const [thumbnailGenerateModalOpen, setThumbnailGenerateModalOpen] =
     useState(false);
-  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [_thumbnailUploading, _setThumbnailUploading] = useState(false);
   const [video] = trpc.studio.getOne.useSuspenseQuery({ id: videoId });
   const [categories] = trpc.categories.getMany.useSuspenseQuery();
 
@@ -212,7 +212,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     },
   });
 
-  const generateDescriptionMutation =
+  const _generateDescriptionMutation =
     trpc.videos.generateDescription.useMutation({
       onSuccess: () => {
         // invalidate query để fetch dữ liệu mới
@@ -222,7 +222,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
       onError: () => toast.error("Failed to generate description"),
     });
 
-  const generateTitleMutation = trpc.videos.generateTitle.useMutation({
+  const _generateTitleMutation = trpc.videos.generateTitle.useMutation({
     onSuccess: () => {
       utils.studio.getOne.invalidate({ id: videoId });
       toast.success("Title generation started");
@@ -376,12 +376,11 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                           alt="Thumbnail"
                         />
 
-                        {thumbnailUploading && (
+                        {_thumbnailUploading && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white font-bold z-10 text-sm">
                             Uploading thumbnail...
                           </div>
                         )}
-
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

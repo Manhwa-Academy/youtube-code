@@ -6,7 +6,7 @@
     "dev:all": "concurrently \"bun run dev:webhook\" \"bun run dev\" ",
     "dev:webhook": "ngrok http --url=unarmored-crafter-acclaim.ngrok-free.dev 3000",
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint"
   },

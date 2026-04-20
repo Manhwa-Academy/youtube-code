@@ -19,9 +19,9 @@ export const PlaylistsView = () => {
       />
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Playlists</h1>
+          <h1 className="text-2xl font-bold">Danh sách phát</h1>
           <p className="text-xs text-muted-foreground">
-            Collections you have created
+            Bộ sưu tập bạn đã tạo
           </p>
         </div>
         <Button

@@ -3,8 +3,17 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { ChevronDownIcon, ChevronUpIcon, MessageSquareIcon, MoreVerticalIcon, ThumbsDownIcon, ThumbsUpIcon, Trash2Icon } from "lucide-react";
-
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  MessageSquareIcon,
+  MoreVerticalIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { formatDistanceToNowStrict } from "date-fns";
+import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
@@ -22,8 +31,8 @@ import { CommentsGetManyOutput } from "../../types";
 
 interface CommentItemProps {
   comment: CommentsGetManyOutput["items"][number];
-  variant?: "reply" | "comment",
-};
+  variant?: "reply" | "comment";
+}
 
 export const CommentItem = ({
   comment,
@@ -93,16 +102,24 @@ export const CommentItem = ({
                 {comment.user.name}
               </span>
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(comment.createdAt, {
+                {formatDistanceToNowStrict(new Date(comment.createdAt), {
                   addSuffix: true,
-                })}
+                  locale: vi,
+                })
+                  .replace("vài giây trước", "vừa xong")
+                  .replace(" giây trước", " giây trước")
+                  .replace(" phút trước", " phút trước")
+                  .replace(" giờ trước", " giờ trước")
+                  .replace(" ngày trước", " ngày trước")
+                  .replace(" tháng trước", " tháng trước")
+                  .replace(" năm trước", "năm trước")}
               </span>
             </div>
           </Link>
           <p className="text-sm">{comment.value}</p>
           <div className="flex items-center gap-2 mt-1">
             <div className="flex items-center">
-              <Button 
+              <Button
                 disabled={like.isPending}
                 variant="ghost"
                 size="icon"
@@ -118,7 +135,7 @@ export const CommentItem = ({
               <span className="text-xs text-muted-foreground">
                 {comment.likeCount}
               </span>
-              <Button 
+              <Button
                 disabled={dislike.isPending}
                 variant="ghost"
                 size="icon"
@@ -142,7 +159,7 @@ export const CommentItem = ({
                 className="h-8"
                 onClick={() => setIsReplyOpen(true)}
               >
-                Reply
+                Trả lời
               </Button>
             )}
           </div>
@@ -156,16 +173,18 @@ export const CommentItem = ({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setIsReplyOpen(true)}>
               <MessageSquareIcon className="size-4" />
-              Reply
+             Trả lời
             </DropdownMenuItem>
             {comment.user.clerkId === userId && (
-              <DropdownMenuItem onClick={() => remove.mutate({ id: comment.id })}>
+              <DropdownMenuItem
+                onClick={() => remove.mutate({ id: comment.id })}
+              >
                 <Trash2Icon className="size-4" />
-                Delete
+                Xóa
               </DropdownMenuItem>
             )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       {isReplyOpen && variant === "comment" && (
         <div className="mt-4 pl-14">
@@ -189,16 +208,13 @@ export const CommentItem = ({
             onClick={() => setIsRepliesOpen((current) => !current)}
           >
             {isRepliesOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-            {comment.replyCount} replies
+         {comment.replyCount} lượt phản hồi
           </Button>
         </div>
       )}
       {comment.replyCount > 0 && variant === "comment" && isRepliesOpen && (
-        <CommentReplies
-          parentId={comment.id}
-          videoId={comment.videoId}
-        />
+        <CommentReplies parentId={comment.id} videoId={comment.videoId} />
       )}
     </div>
-  )
+  );
 };

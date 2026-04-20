@@ -44,7 +44,7 @@ export const StudioUploadModal = () => {
       </ResponsiveModal>
       <Button variant="secondary" onClick={() => create.mutate()} disabled={create.isPending}>
         {create.isPending ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
-        Create
+       Tạo
       </Button>
     </>
   );

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { UTApi } from "uploadthing/server";
+import { sql } from "drizzle-orm";
 import {
   and,
   desc,
@@ -96,7 +97,11 @@ export const videosRouter = createTRPCRouter({
               : undefined,
           ),
         )
-        .orderBy(desc(videos.updatedAt), desc(videos.id))
+        .orderBy(
+          ...(cursor
+            ? [desc(videos.updatedAt), desc(videos.id)]
+            : [sql`RANDOM()`]),
+        )
         // Add 1 to the limit to check if there is more data
         .limit(limit + 1);
 
@@ -249,7 +254,11 @@ export const videosRouter = createTRPCRouter({
               : undefined,
           ),
         )
-        .orderBy(desc(videos.updatedAt), desc(videos.id))
+        .orderBy(
+          ...(cursor
+            ? [desc(videos.updatedAt), desc(videos.id)]
+            : [sql`RANDOM()`]),
+        )
         // Add 1 to the limit to check if there is more data
         .limit(limit + 1);
 
@@ -349,28 +358,33 @@ export const videosRouter = createTRPCRouter({
 
       return existingVideo;
     }),
-  generateTitle: protectedProcedure
-    .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const { id: userId } = ctx.user;
-
-      const { workflowRunId } = await workflow.trigger({
-        url: `${process.env.UPSTASH_WORKFLOW_URL}/workflows/f9b76807-17e3-451e-892f-95cdb165d5db/runs`,
-        body: { userId, videoId: input.id },
-      });
-
-      return { workflowRunId };
-    }),
-
   generateDescription: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user;
 
       const { workflowRunId } = await workflow.trigger({
-        url: `${process.env.UPSTASH_WORKFLOW_URL}/workflows/f9b76807-17e3-451e-892f-95cdb165d5db/runs`,
+        url: `${process.env.UPSTASH_WORKFLOW_URL}/api/videos/workflows/description`,
         body: { userId, videoId: input.id },
       });
+
+      return workflowRunId;
+    }),
+  generateTitle: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      console.log("📥 TRPC generateTitle called", input);
+
+      const { id: userId } = ctx.user;
+
+      console.log("👤 User ID:", userId);
+
+      const { workflowRunId } = await workflow.trigger({
+        url: `${process.env.UPSTASH_WORKFLOW_URL}/api/videos/workflows/title`,
+        body: { userId, videoId: input.id },
+      });
+
+      console.log("🧠 Workflow triggered:", workflowRunId);
 
       return { workflowRunId };
     }),
@@ -441,7 +455,6 @@ export const videosRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user;
 
-      // Lấy video
       const [existingVideo] = await db
         .select()
         .from(videos)
@@ -451,15 +464,10 @@ export const videosRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      // Xóa thumbnail cũ nếu có
       if (existingVideo.thumbnailKey) {
         const utapi = new UTApi();
-        try {
-          await utapi.deleteFiles(existingVideo.thumbnailKey);
-        } catch {
-          console.warn("Old thumbnail key not found, skipping delete");
-        }
 
+        await utapi.deleteFiles(existingVideo.thumbnailKey);
         await db
           .update(videos)
           .set({ thumbnailKey: null, thumbnailUrl: null })
@@ -467,47 +475,24 @@ export const videosRouter = createTRPCRouter({
       }
 
       if (!existingVideo.muxPlaybackId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Video chưa có Mux playback ID",
-        });
+        throw new TRPCError({ code: "BAD_REQUEST" });
       }
 
-      // Random frame URL từ Mux PNG
-      const width = 1280;
-      const height = 720;
-      const randomPercent = Math.floor(Math.random() * 90) + 5;
-      const tempThumbnailUrl = `https://image.mux.com/${existingVideo.muxPlaybackId}/thumbnail.png?width=${width}&height=${height}&time=${randomPercent}`;
-
-      // Upload lên UploadThing
       const utapi = new UTApi();
-      let uploadedThumbnail;
-      try {
-        const files = await utapi.uploadFilesFromUrl([
-          { url: tempThumbnailUrl },
-        ]);
-        if (!files || !files[0]?.data) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Upload thumbnail failed",
-          });
-        }
-        uploadedThumbnail = files[0].data;
-      } catch (err) {
-        console.error("UploadThing error:", err);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Upload thumbnail failed",
-        });
+
+      const tempThumbnailUrl = `https://image.mux.com/${existingVideo.muxPlaybackId}/thumbnail.jpg`;
+      const uploadedThumbnail =
+        await utapi.uploadFilesFromUrl(tempThumbnailUrl);
+
+      if (!uploadedThumbnail.data) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       }
 
-      // Update DB
+      const { key: thumbnailKey, url: thumbnailUrl } = uploadedThumbnail.data;
+
       const [updatedVideo] = await db
         .update(videos)
-        .set({
-          thumbnailUrl: uploadedThumbnail.url,
-          thumbnailKey: uploadedThumbnail.key,
-        })
+        .set({ thumbnailUrl, thumbnailKey })
         .where(and(eq(videos.id, input.id), eq(videos.userId, userId)))
         .returning();
 

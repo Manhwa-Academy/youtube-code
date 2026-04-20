@@ -27,12 +27,13 @@ export const VideoDescription = ({
     >
       <div className="flex gap-2 text-sm mb-2">
         <span className="font-medium">
-          {isExpanded ? expandedViews : compactViews} views
+          {isExpanded ? expandedViews : compactViews} lượt xem
         </span>
         <span className="font-medium">
           {isExpanded ? expandedDate : compactDate}
         </span>
       </div>
+
       <div className="relative">
         <p 
           className={cn(
@@ -40,16 +41,17 @@ export const VideoDescription = ({
             !isExpanded && "line-clamp-2",
           )}
         >
-          {description || "No description"}
+          {description || "Không có mô tả"}
         </p>
+
         <div className="flex items-center gap-1 mt-4 text-sm font-medium">
           {isExpanded ? (
             <>
-              Show less <ChevronUpIcon className="size-4" />
+              Thu gọn <ChevronUpIcon className="size-4" />
             </>
           ) : (
             <>
-              Show more <ChevronDownIcon className="size-4" />
+              Xem thêm <ChevronDownIcon className="size-4" />
             </>
           )}
         </div>

@@ -46,14 +46,14 @@ export const FilterCarousel = ({
       setCurrent(api.selectedScrollSnap() + 1);
     });
   }, [api]);
-  
+
   return (
     <div className="relative w-full">
       {/* Left fade */}
       <div
         className={cn(
           "absolute left-12 top-0 bottom-0 w-12 z-10 bg-gradient-to-r from-white to-transparent pointer-events-none",
-          current === 1 && "hidden"
+          current === 1 && "hidden",
         )}
       />
 
@@ -72,36 +72,36 @@ export const FilterCarousel = ({
               className="pl-3 basis-auto"
             >
               <Badge
-                variant={!value ? "default" :"secondary"}
-                className="rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap text-sm"
+                variant={!value ? "default" : "secondary"}
+                className="rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap text-sm select-none"
               >
-                All
+                Tất cả
               </Badge>
             </CarouselItem>
           )}
-          {isLoading && 
+          {isLoading &&
             Array.from({ length: 14 }).map((_, index) => (
               <CarouselItem key={index} className="pl-3 basis-auto">
                 <Skeleton className="rounded-lg px-3 py-1 h-full text-sm w-[100px] font-semibold">
                   &nbsp;
                 </Skeleton>
               </CarouselItem>
-            ))
-          }
-          {!isLoading && data.map((item) => (
-            <CarouselItem 
-              key={item.value} 
-              className="pl-3 basis-auto" 
-              onClick={() => onSelect(item.value)}
-            >
-              <Badge
-                variant={value === item.value ? "default" : "secondary"}
-                className="rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap text-sm"
+            ))}
+          {!isLoading &&
+            data.map((item) => (
+              <CarouselItem
+                key={item.value}
+                className="pl-3 basis-auto"
+                onClick={() => onSelect(item.value)}
               >
-                {item.label}
-              </Badge>
-            </CarouselItem>
-          ))}
+                <Badge
+                  variant={value === item.value ? "default" : "secondary"}
+                  className="rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap text-sm select-none"
+                >
+                  {item.label}
+                </Badge>
+              </CarouselItem>
+            ))}
         </CarouselContent>
         <CarouselPrevious className="left-0 z-20" />
         <CarouselNext className="right-0 z-20" />
@@ -111,9 +111,9 @@ export const FilterCarousel = ({
       <div
         className={cn(
           "absolute right-12 top-0 bottom-0 w-12 z-10 bg-gradient-to-l from-white to-transparent pointer-events-none",
-          current === count && "hidden"
+          current === count && "hidden",
         )}
       />
     </div>
-  )
-}
+  );
+};

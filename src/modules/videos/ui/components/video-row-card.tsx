@@ -21,7 +21,7 @@ const videoRowCardVariants = cva("group flex min-w-0", {
   variants: {
     size: {
       default: "gap-4",
-      compact: "gap-2"
+      compact: "gap-2",
     },
   },
   defaultVariants: {
@@ -44,9 +44,11 @@ const thumbnailVariants = cva("relative flex-none", {
 interface VideoRowCardProps extends VariantProps<typeof videoRowCardVariants> {
   data: VideoGetManyOutput["items"][number];
   onRemove?: () => void;
-};
+}
 
-export const VideoRowCardSkeleton = ({ size = "default" }: VariantProps<typeof videoRowCardVariants>) => {
+export const VideoRowCardSkeleton = ({
+  size = "default",
+}: VariantProps<typeof videoRowCardVariants>) => {
   return (
     <div className={videoRowCardVariants({ size })}>
       {/* Thumbnail skeleton */}
@@ -88,20 +90,24 @@ export const VideoRowCard = ({
   onRemove,
 }: VideoRowCardProps) => {
   const compactViews = useMemo(() => {
-    return Intl.NumberFormat("en", {
-      notation: "compact"
+    return Intl.NumberFormat("vi-VN", {
+      notation: "compact",
     }).format(data.viewCount);
   }, [data.viewCount]);
 
   const compactLikes = useMemo(() => {
-    return Intl.NumberFormat("en", {
-      notation: "compact"
+    return Intl.NumberFormat("vi-VN", {
+      notation: "compact",
     }).format(data.likeCount);
   }, [data.likeCount]);
 
   return (
     <div className={videoRowCardVariants({ size })}>
-      <Link prefetch href={`/videos/${data.id}`} className={thumbnailVariants({ size })}>
+      <Link
+        prefetch
+        href={`/videos/${data.id}`}
+        className={thumbnailVariants({ size })}
+      >
         <VideoThumbnail
           imageUrl={data.thumbnailUrl}
           previewUrl={data.previewUrl}
@@ -124,7 +130,7 @@ export const VideoRowCard = ({
             </h3>
             {size === "default" && (
               <p className="text-xs text-muted-foreground mt-1">
-                {compactViews} views • {compactLikes} likes
+                {compactViews} lượt xem • {compactLikes} lượt thích
               </p>
             )}
             {size === "default" && (
@@ -140,7 +146,7 @@ export const VideoRowCard = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <p className="text-xs text-muted-foreground w-fit line-clamp-2">
-                      {data.description ?? "No description"}
+                      {data.description ?? "Không có mô tả"}
                     </p>
                   </TooltipTrigger>
                   <TooltipContent
@@ -148,17 +154,15 @@ export const VideoRowCard = ({
                     align="center"
                     className="bg-black/70"
                   >
-                    <p>From the video description</p>
+                    <p>Từ mô tả video</p>
                   </TooltipContent>
                 </Tooltip>
               </>
             )}
-            {size === "compact" && (
-              <UserInfo size="sm" name={data.user.name} />
-            )}
+            {size === "compact" && <UserInfo size="sm" name={data.user.name} />}
             {size === "compact" && (
               <p className="text-xs text-muted-foreground mt-1">
-                {compactViews} views • {compactLikes} likes
+                {compactViews} lượt xem • {compactLikes} lượt thích
               </p>
             )}
           </Link>

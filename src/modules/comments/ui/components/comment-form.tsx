@@ -35,11 +35,11 @@ export const CommentForm = ({
       utils.comments.getMany.invalidate({ videoId });
       utils.comments.getMany.invalidate({ videoId, parentId });
       form.reset();
-      toast.success("Comment added");
+      toast.success("Đã thêm bình luận");
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Something went wrong");
+      toast.error("Có lỗi xảy ra");
 
       if (error.data?.code === "UNAUTHORIZED") {
         clerk.openSignIn();
@@ -74,8 +74,9 @@ export const CommentForm = ({
         <UserAvatar
           size="lg"
           imageUrl={user?.imageUrl || "/user-placeholder.svg"}
-          name={user?.username || "User"}
+          name={user?.username || "Người dùng"}
         />
+
         <div className="flex-1">
           <FormField
             name="value"
@@ -87,8 +88,8 @@ export const CommentForm = ({
                     {...field}
                     placeholder={
                       variant === "reply"
-                      ? "Reply to this comment..."
-                      : "Add a comment..."
+                        ? "Trả lời bình luận..."
+                        : "Viết bình luận..."
                     }
                     className="resize-none bg-transparent overflow-hidden min-h-0"
                   />
@@ -97,22 +98,24 @@ export const CommentForm = ({
               </FormItem>
             )}
           />
+
           <div className="justify-end gap-2 mt-2 flex">
             {onCancel && (
               <Button variant="ghost" type="button" onClick={handleCancel}>
-                Cancel
+                Hủy
               </Button>
             )}
+
             <Button
               disabled={create.isPending}
               type="submit"
               size="sm"
             >
-             {variant === "reply" ? "Reply" : "Comment"}
+              {variant === "reply" ? "Trả lời" : "Bình luận"}
             </Button>
           </div>
         </div>
       </form>
     </Form>
-  )
+  );
 };

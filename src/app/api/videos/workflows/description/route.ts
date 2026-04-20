@@ -7,82 +7,148 @@ import { videos } from "@/db/schema";
 interface InputType {
   userId: string;
   videoId: string;
-};
+}
 
-const DESCRIPTION_SYSTEM_PROMPT = `Your task is to summarize the transcript of a video. Please follow these guidelines:
-- Be brief. Condense the content into a summary that captures the key points and main ideas without losing important details.
-- Avoid jargon or overly complex language unless necessary for the context.
-- Focus on the most critical information, ignoring filler, repetitive statements, or irrelevant tangents.
-- ONLY return the summary, no other text, annotations, or comments.
-- Aim for a summary that is 3-5 sentences long and no more than 200 characters.`;
+export const { POST } = serve(async (context) => {
+  console.log("🚀 DESCRIPTION WORKFLOW START");
 
-export const { POST } = serve(
-  async (context) => {
-    const input = context.requestPayload as InputType;
-    const { videoId, userId } = input;
+  const input = context.requestPayload as InputType;
 
-    const video = await context.run("get-video", async () => {
-      const [existingVideo] = await db
-        .select()
-        .from(videos)
-        .where(and(
-          eq(videos.id, videoId),
-          eq(videos.userId, userId),
-        ));
+  if (!input?.videoId || !input?.userId) {
+    throw new Error("Missing videoId or userId");
+  }
 
-      if (!existingVideo) {
-        throw new Error("Not found");
-      }
+  const { videoId, userId } = input;
 
-      return existingVideo;
-    });
+  // ================= GET VIDEO =================
+  const video = await context.run("get-video", async () => {
+    const [existingVideo] = await db
+      .select()
+      .from(videos)
+      .where(and(eq(videos.id, videoId), eq(videos.userId, userId)));
 
-    const transcript = await context.run("get-transcript", async () => {
-      const trackUrl = `https://stream.mux.com/${video.muxPlaybackId}/text/${video.muxTrackId}.txt`;
-      const response = await fetch(trackUrl);
-      const text = await response.text();
+    if (!existingVideo) throw new Error("Video not found");
 
-      if (!text) {
-        throw new Error("Bad request");
-      }
+    return existingVideo;
+  });
 
-      return text;
-    });
+  // ================= GET TRANSCRIPT =================
+  const transcript = await context.run("get-transcript", async () => {
+    if (!video.muxPlaybackId || !video.muxTrackId) {
+      console.warn("⚠️ No mux data");
+      return "";
+    }
 
-    // ---------- OpenRouter / Nvidia Nemotron ----------
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const trackUrl = `https://stream.mux.com/${video.muxPlaybackId}/text/${video.muxTrackId}.txt`;
+
+    const res = await fetch(trackUrl);
+
+    if (!res.ok) {
+      console.warn("⚠️ Failed transcript fetch");
+      return "";
+    }
+
+    const text = await res.text();
+
+    if (!text || text.length < 50) {
+      console.warn("⚠️ Transcript too short");
+      return "";
+    }
+
+    return text;
+  });
+
+  // ================= AI INPUT =================
+  console.log("🤖 Generating description...");
+
+  const isGoodTranscript = transcript && transcript.length > 200;
+
+  const inputText = isGoodTranscript
+    ? `
+Transcript:
+${transcript}
+`
+    : `
+Video info:
+
+Title: ${video.title || "unknown"}
+
+Generate a short YouTube description based on this video.
+`;
+
+  // 🔥 PROMPT CHUẨN (ép AI không nói nhảm)
+  const SYSTEM_PROMPT = `
+Write ONLY a YouTube video description.
+
+Rules:
+- 2-3 sentences
+- Max 200 characters
+- No explanation
+- No hashtags
+- No emojis
+- Match actual content
+- Do NOT assume genre if unclear
+`;
+
+  const aiResponse = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY!}` // key OpenRouter
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY!}`,
       },
       body: JSON.stringify({
-        model: "nvidia/nemotron-3-super-120b-a12b:free",
+        model: "openai/gpt-oss-120b:free",
         messages: [
-          { role: "system", content: DESCRIPTION_SYSTEM_PROMPT },
-          { role: "user", content: transcript }
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: inputText.slice(0, 8000) },
         ],
-        max_tokens: 200,
+        max_tokens: 120,
+        temperature: 0.7,
       }),
-    });
+    },
+  );
 
-    const data = await response.json();
-    const description = data.choices?.[0]?.message?.content;
-
-    if (!description) {
-      throw new Error("Bad request");
-    }
-
-    await context.run("update-video", async () => {
-      await db
-        .update(videos)
-        .set({
-          description: description || video.description,
-        })
-        .where(and(
-          eq(videos.id, video.id),
-          eq(videos.userId, video.userId),
-        ));
-    });
+  if (!aiResponse.ok) {
+    const err = await aiResponse.text();
+    console.error("❌ AI ERROR:", err);
+    throw new Error("AI request failed");
   }
-);
+
+  const data = await aiResponse.json();
+
+  let description = data.choices?.[0]?.message?.content?.trim();
+
+  // ================= CLEAN OUTPUT =================
+  description = description?.split("\n")[0].replace(/[*"]/g, "").trim();
+
+  // 🔥 ANTI RÁC
+  if (
+    !description ||
+    description.length > 300 ||
+    description.toLowerCase().includes("transcript") ||
+    description.toLowerCase().includes("user")
+  ) {
+    console.warn("⚠️ Bad description → fallback");
+
+    description =
+      video.description ||
+      "Watch this video to discover the key highlights and main ideas.";
+  }
+
+  console.log("✨ FINAL DESCRIPTION:", description);
+
+  // ================= UPDATE DB =================
+  await context.run("update-video", async () => {
+    await db
+      .update(videos)
+      .set({
+        description,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(videos.id, video.id), eq(videos.userId, video.userId)));
+  });
+
+  console.log("🎉 DESCRIPTION DONE");
+});

@@ -28,8 +28,8 @@ export const VideoMenu = ({
   const onShare = () => {
     const fullUrl = `${APP_URL}/videos/${videoId}`;
     navigator.clipboard.writeText(fullUrl);
-    toast.success("Link copied to the clipboard");
-  }
+    toast.success("Đã sao chép liên kết");
+  };
 
   return (
     <>
@@ -38,25 +38,29 @@ export const VideoMenu = ({
         open={isOpenPlaylistAddModal}
         onOpenChange={setIsOpenPlaylistAddModal}
       />
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant={variant} size="icon" className="rounded-full">
             <MoreVerticalIcon />
           </Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem onClick={onShare}>
             <ShareIcon className="mr-2 size-4" />
-            Share
+            Chia sẻ
           </DropdownMenuItem>
+
           <DropdownMenuItem onClick={() => setIsOpenPlaylistAddModal(true)}>
             <ListPlusIcon className="mr-2 size-4" />
-            Add to playlist
+            Thêm vào danh sách phát
           </DropdownMenuItem>
+
           {onRemove && (
             <DropdownMenuItem onClick={onRemove}>
               <Trash2Icon className="mr-2 size-4" />
-              Remove
+              Xóa
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

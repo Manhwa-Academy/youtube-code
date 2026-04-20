@@ -22,7 +22,7 @@ interface PlaylistCreateModalProps {
 };
 
 const formSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1, "Vui lòng nhập tên danh sách phát"),
 });
 
 export const PlaylistCreateModal = ({
@@ -40,12 +40,12 @@ export const PlaylistCreateModal = ({
   const create = trpc.playlists.create.useMutation({
     onSuccess: () => {
       utils.playlists.getMany.invalidate();
-      toast.success("Playlist created");
+      toast.success("Tạo danh sách phát thành công");
       form.reset();
       onOpenChange(false);
     },
     onError: () => {
-      toast.error("Something went wrong");
+      toast.error("Đã xảy ra lỗi");
     },
   });
 
@@ -55,7 +55,7 @@ export const PlaylistCreateModal = ({
 
   return (
     <ResponsiveModal
-      title="Create a playlist"
+      title="Tạo danh sách phát"
       open={open}
       onOpenChange={onOpenChange}
     >
@@ -69,11 +69,11 @@ export const PlaylistCreateModal = ({
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Prompt</FormLabel>
+                <FormLabel>Tên danh sách phát</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="My favorite videos"
+                    placeholder="Ví dụ: Video yêu thích"
                   />
                 </FormControl>
                 <FormMessage />
@@ -85,7 +85,7 @@ export const PlaylistCreateModal = ({
               disabled={create.isPending}
               type="submit"
             >
-              Create
+              Tạo
             </Button>
           </div>
         </form>

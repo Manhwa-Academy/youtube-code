@@ -7,12 +7,14 @@ import { VideoMenu } from "./video-menu";
 import { VideoOwner } from "./video-owner";
 import { VideoReactions } from "./video-reactions";
 import { VideoDescription } from "./video-description";
+import { formatDistanceToNowStrict } from "date-fns";
+import { vi } from "date-fns/locale";
 
 import { VideoGetOneOutput } from "../../types";
 
 interface VideoTopRowProps {
   video: VideoGetOneOutput;
-};
+}
 
 export const VideoTopRowSkeleton = () => {
   return (
@@ -37,21 +39,23 @@ export const VideoTopRowSkeleton = () => {
 
 export const VideoTopRow = ({ video }: VideoTopRowProps) => {
   const compactViews = useMemo(() => {
-    return Intl.NumberFormat("en", {
-      notation: "compact"
-    }).format(video.viewCount);
-  }, [video.viewCount]);
-  const expandedViews = useMemo(() => {
-    return Intl.NumberFormat("en", {
-      notation: "standard"
+    return Intl.NumberFormat("vi-VN", {
+      notation: "compact",
     }).format(video.viewCount);
   }, [video.viewCount]);
 
+  const expandedViews = useMemo(() => {
+    return Intl.NumberFormat("vi-VN").format(video.viewCount);
+  }, [video.viewCount]);
+
   const compactDate = useMemo(() => {
-    return formatDistanceToNow(video.createdAt, { addSuffix: true });
+    return formatDistanceToNowStrict(new Date(video.createdAt), {
+      addSuffix: true,
+      locale: vi,
+    });
   }, [video.createdAt]);
   const expandedDate = useMemo(() => {
-    return format(video.createdAt, "d MMM yyyy");
+    return format(new Date(video.createdAt), "dd/MM/yyyy");
   }, [video.createdAt]);
 
   return (

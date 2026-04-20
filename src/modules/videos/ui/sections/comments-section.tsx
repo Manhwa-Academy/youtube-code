@@ -41,20 +41,25 @@ const CommentsSectionSuspense = ({ videoId }: CommentsSectionProps) => {
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
+  const total = comments.pages[0]?.totalCount || 0;
+
   return (
     <div className="mt-6">
       <div className="flex flex-col gap-6">
         <h1 className="text-xl font-bold">
-          {comments.pages[0].totalCount} Comments
+          {total} bình luận
         </h1>
+
         <CommentForm videoId={videoId} />
-        <div className="flex flex-col  gap-4 mt-2">
+
+        <div className="flex flex-col gap-4 mt-2">
           {comments.pages.flatMap((page) => page.items).map((comment) => (
             <CommentItem
               key={comment.id}
               comment={comment}
             />
           ))}
+
           <InfiniteScroll
             isManual
             hasNextPage={query.hasNextPage}

@@ -16,19 +16,19 @@ import {
 
 const items = [
   {
-    title: "History",
+    title: "Lịch sử",
     url: "/playlists/history",
     icon: HistoryIcon,
     auth: true,
   },
   {
-    title: "Liked videos",
+    title: "Video đã thích",
     url: "/playlists/liked",
     icon: ThumbsUpIcon,
     auth: true,
   },
   {
-    title: "All playlists",
+    title: "Tất cả danh sách phát",
     url: "/playlists",
     icon: ListVideoIcon,
     auth: true,
@@ -42,7 +42,7 @@ export const PersonalSection = () => {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>You</SidebarGroupLabel>
+      <SidebarGroupLabel>Bạn</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (

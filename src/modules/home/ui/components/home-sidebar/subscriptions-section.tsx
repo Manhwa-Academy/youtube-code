@@ -45,7 +45,7 @@ export const SubscriptionsSection = () => {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Subscriptions</SidebarGroupLabel>
+      <SidebarGroupLabel>Kênh đã đăng ký</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {isLoading && <LoadingSkeleton />}
@@ -75,7 +75,7 @@ export const SubscriptionsSection = () => {
               >
                 <Link prefetch href="/subscriptions" className="flex items-center gap-4">
                   <ListIcon className="size-4" />
-                  <span className="text-sm">All subscriptions</span>
+                  <span className="text-sm">Tất cả kênh đã đăng ký</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

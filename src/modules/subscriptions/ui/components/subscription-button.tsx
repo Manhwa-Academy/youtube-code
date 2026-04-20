@@ -24,7 +24,7 @@ export const SubscriptionButton = ({
       onClick={onClick}
       disabled={disabled}
     >
-      {isSubscribed ? "Unsubscribe" : "Subscribe"}
+      {isSubscribed ? "Đã đăng ký" : "Đăng ký"}
     </Button>
   );
 };

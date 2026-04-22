@@ -59,7 +59,7 @@ export const PlaylistThumbnail = ({
           <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="flex items-center gap-x-2">
               <PlayIcon className="size-4 text-white fill-white" />
-              <span className="text-white font-medium">Play all</span>
+              <span className="text-white font-medium">Phát tất cả</span>
             </div>
           </div>
         </div>

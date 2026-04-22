@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useState } from "react";
-import { ListPlusIcon, MoreVerticalIcon, ShareIcon, Trash2Icon } from "lucide-react";
+import { ListPlusIcon, MoreVerticalIcon, ShareIcon, Trash2Icon, PlusIcon } from "lucide-react";
 
 import { APP_URL } from "@/constants";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { PlaylistAddModal } from "@/modules/playlists/ui/components/playlist-add-modal";
+import { PlaylistCreateModal } from "@/modules/playlists/ui/components/playlist-create-modal";
 
 interface VideoMenuProps {
   videoId: string;
@@ -18,12 +20,9 @@ interface VideoMenuProps {
   onRemove?: () => void;
 }
 
-export const VideoMenu = ({
-  videoId,
-  variant = "ghost",
-  onRemove,
-}: VideoMenuProps) => {
+export const VideoMenu = ({ videoId, variant = "ghost", onRemove }: VideoMenuProps) => {
   const [isOpenPlaylistAddModal, setIsOpenPlaylistAddModal] = useState(false);
+  const [isOpenCreateModal, setIsOpenCreateModal] = useState(false);
 
   const onShare = () => {
     const fullUrl = `${APP_URL}/videos/${videoId}`;
@@ -33,10 +32,18 @@ export const VideoMenu = ({
 
   return (
     <>
+      {/* Modal thêm video vào playlist */}
       <PlaylistAddModal
         videoId={videoId}
         open={isOpenPlaylistAddModal}
         onOpenChange={setIsOpenPlaylistAddModal}
+      />
+
+      {/* Modal tạo playlist mới */}
+      <PlaylistCreateModal
+        open={isOpenCreateModal}
+        onOpenChange={setIsOpenCreateModal}
+        initialVideoIds={[videoId]} // ✅ tự động thêm video hiện tại vào playlist mới
       />
 
       <DropdownMenu>
@@ -55,6 +62,11 @@ export const VideoMenu = ({
           <DropdownMenuItem onClick={() => setIsOpenPlaylistAddModal(true)}>
             <ListPlusIcon className="mr-2 size-4" />
             Thêm vào danh sách phát
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={() => setIsOpenCreateModal(true)}>
+            <PlusIcon className="mr-2 size-4" />
+            Tạo playlist kết hợp mới
           </DropdownMenuItem>
 
           {onRemove && (

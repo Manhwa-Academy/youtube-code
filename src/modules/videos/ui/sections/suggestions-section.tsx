@@ -2,17 +2,30 @@
 
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-
 import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
-import { InfiniteScroll } from "@/components/infinite-scroll";
 
-import { VideoGridCard, VideoGridCardSkeleton } from "../components/video-grid-card";
-import { VideoRowCard, VideoRowCardSkeleton } from "../components/video-row-card";
+import {
+  VideoGridCard,
+  VideoGridCardSkeleton,
+} from "../components/video-grid-card";
+import {
+  VideoRowCard,
+  VideoRowCardSkeleton,
+} from "../components/video-row-card";
+import { VideoGetManyOutput } from "../../types";
 
 interface SuggestionsSectionProps {
   videoId: string;
   isManual?: boolean;
+}
+
+type Video = VideoGetManyOutput["items"][number] & {
+  playlist?: {
+    id: string;
+    name: string;
+    videos: { id: string; title: string; thumbnailUrl?: string | null }[];
+  };
 };
 
 export const SuggestionsSection = ({
@@ -25,8 +38,8 @@ export const SuggestionsSection = ({
         <SuggestionsSectionSuspense videoId={videoId} isManual={isManual} />
       </ErrorBoundary>
     </Suspense>
-  )
-}
+  );
+};
 
 export const SuggestionsSectionSkeleton = () => {
   return (
@@ -42,45 +55,30 @@ export const SuggestionsSectionSkeleton = () => {
         ))}
       </div>
     </>
-  )
-}
+  );
+};
 
-const SuggestionsSectionSuspense = ({
-  videoId,
-  isManual,
-}: SuggestionsSectionProps) => {
-  const [suggestions, query] = trpc.suggestions.getMany.useSuspenseInfiniteQuery({
+const SuggestionsSectionSuspense = ({ videoId }: SuggestionsSectionProps) => {
+  const [data] = trpc.suggestions.getMany.useSuspenseQuery({
     videoId,
     limit: DEFAULT_LIMIT,
-  }, {
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
   return (
     <>
+      {/* Desktop */}
       <div className="hidden md:block space-y-3">
-        {suggestions.pages.flatMap((page) => page.items.map((video) => (
-          <VideoRowCard
-            key={video.id}
-            data={video}
-            size="compact"
-          />
-        )))}
+        {data.items.map((video: Video) => (
+          <VideoRowCard key={video.id} data={video} size="compact" />
+        ))}
       </div>
+
+      {/* Mobile */}
       <div className="block md:hidden space-y-10">
-        {suggestions.pages.flatMap((page) => page.items.map((video) => (
-          <VideoGridCard
-            key={video.id}
-            data={video}
-          />
-        )))}
+        {data.items.map((video: Video) => (
+          <VideoGridCard key={video.id} data={video} />
+        ))}
       </div>
-      <InfiniteScroll
-        isManual={isManual}
-        hasNextPage={query.hasNextPage}
-        isFetchingNextPage={query.isFetchingNextPage}
-        fetchNextPage={query.fetchNextPage}
-      />
     </>
   );
 };

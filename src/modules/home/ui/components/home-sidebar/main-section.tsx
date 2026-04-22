@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { FlameIcon, HomeIcon, PlaySquareIcon } from "lucide-react";
 
-import { 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
 const items = [
@@ -39,6 +40,12 @@ export const MainSection = () => {
 
   return (
     <SidebarGroup>
+      {/* 🔥 LOGO + TITLE (mobile sidebar header) */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b sm:hidden">
+        <Image src="/yuuka.png" alt="Logo" width={28} height={28} />
+        <span className="font-semibold text-base">Hayase Yuuka</span>
+      </div>
+
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
@@ -54,7 +61,7 @@ export const MainSection = () => {
                   }
                 }}
               >
-                <Link prefetch href={item.url} className="flex items-center gap-4">
+                <Link href={item.url} className="flex items-center gap-4">
                   <item.icon />
                   <span className="text-sm">{item.title}</span>
                 </Link>
@@ -64,5 +71,5 @@ export const MainSection = () => {
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
-}
+  );
+};

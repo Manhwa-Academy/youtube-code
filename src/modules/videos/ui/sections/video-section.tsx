@@ -1,16 +1,18 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { ErrorBoundary } from "react-error-boundary";
+import { useSearchParams } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
-
+import { THUMBNAIL_FALLBACK } from "../../constants";
 import { VideoBanner } from "../components/video-banner";
 import { VideoPlayer, VideoPlayerSkeleton } from "../components/video-player";
 import { VideoTopRow, VideoTopRowSkeleton } from "../components/video-top-row";
 
+import { VideoPlaylist } from "../components/video-playlist";
 interface VideoSectionProps {
   videoId: string;
 }
@@ -22,7 +24,7 @@ export const VideoSection = ({ videoId }: VideoSectionProps) => {
         <VideoSectionSuspense videoId={videoId} />
       </ErrorBoundary>
     </Suspense>
-  )
+  );
 };
 
 export const VideoSectionSkeleton = () => {
@@ -31,41 +33,137 @@ export const VideoSectionSkeleton = () => {
       <VideoPlayerSkeleton />
       <VideoTopRowSkeleton />
     </>
-  )
-}
+  );
+};
 
 const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
   const { isSignedIn } = useAuth();
-
   const utils = trpc.useUtils();
-  const [video] = trpc.videos.getOne.useSuspenseQuery({ id: videoId });
+  const params = useSearchParams();
+
+  const [showPlaylist, setShowPlaylist] = useState(false);
+  const playlistId = params.get("list");
+  const index = Number(params.get("index") || 0);
+  const [currentVideoId, setCurrentVideoId] = useState(videoId);
+  const [currentIndex, setCurrentIndex] = useState(index);
+
+  const [video] = trpc.videos.getOne.useSuspenseQuery({ id: currentVideoId });
+
+  // 🔹 Sử dụng public playlist
+  const { data: playlists } = trpc.playlists.getPublicMixPlaylists.useQuery();
+  const playlist = playlists?.find((p) => p.id === playlistId);
+
+  const next = playlist?.videos?.[index + 1];
+
+  const [history, setHistory] = useState<string[]>([]);
+  useEffect(() => {
+    if (!playlistId) {
+      setHistory((prev) =>
+        prev.includes(videoId) ? prev : [...prev, videoId],
+      );
+    }
+  }, [videoId, playlistId]);
+
+  const { data: suggestions } = trpc.suggestions.getMany.useQuery(
+    { videoId, limit: 5, excludeIds: history },
+    { enabled: !playlistId },
+  );
+
+  const nextVideo = useMemo(() => {
+    if (playlistId && next) {
+      return {
+        id: next.id,
+        title: next.title,
+        thumbnail: next.thumbnail || THUMBNAIL_FALLBACK,
+        playlistId,
+        index: index + 1,
+      };
+    }
+    if (!suggestions?.items?.length) return undefined;
+    const randomIndex = Math.floor(Math.random() * suggestions.items.length);
+    const v = suggestions.items[randomIndex];
+    return {
+      id: v.id,
+      title: v.title,
+      thumbnail: v.thumbnailUrl || THUMBNAIL_FALLBACK,
+    };
+  }, [playlistId, next, suggestions, index]);
+
   const createView = trpc.videoViews.create.useMutation({
-    onSuccess: () => {
-      utils.videos.getOne.invalidate({ id: videoId });
-    },
+    onSuccess: () => utils.videos.getOne.invalidate({ id: videoId }),
   });
 
   const handlePlay = () => {
     if (!isSignedIn) return;
-
     createView.mutate({ videoId });
   };
-  
+
   return (
-    <>
-      <div className={cn(
-        "aspect-video bg-black rounded-xl overflow-hidden relative",
-        video.muxStatus !== "ready" && "rounded-b-none",
-      )}>
+    <div className="flex flex-col gap-4">
+      {/* Video Player */}
+      <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg">
         <VideoPlayer
+          key={currentVideoId}
           autoPlay
           onPlay={handlePlay}
           playbackId={video.muxPlaybackId}
           thumbnailUrl={video.thumbnailUrl}
+          nextVideo={nextVideo}
         />
       </div>
-      <VideoBanner status={video.muxStatus} />
+
+      {/* Playlist toggle button */}
+      {playlist && (
+        <button
+          className="text-sm text-blue-500 hover:text-blue-600 font-medium mt-2 self-start"
+          onClick={() => setShowPlaylist((prev) => !prev)}
+        >
+          {showPlaylist ? "Ẩn danh sách kết hợp" : "Xem danh sách kết hợp"}
+        </button>
+      )}
+
+      {showPlaylist && playlist && (
+        <div className="w-full mt-2 max-h-72 overflow-y-auto bg-gray-900/90 backdrop-blur-md rounded-lg shadow-xl p-3 border border-gray-700">
+          <div className="text-white font-semibold text-sm mb-2">
+            {playlist.name}
+          </div>
+          {playlist.videos.map((v: (typeof playlist.videos)[0], i: number) => (
+            <div
+              key={v.id}
+              className={cn(
+                "flex gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-700/50",
+                i === index ? "bg-gray-700/70" : "",
+              )}
+              onClick={() => {
+                setCurrentVideoId(v.id);
+                setCurrentIndex(i);
+                window.history.pushState(
+                  null,
+                  "",
+                  `/videos/${v.id}?list=${playlist.id}&index=${i}`,
+                );
+              }}
+            >
+              <div className="relative w-20 aspect-video rounded overflow-hidden">
+                <img
+                  src={v.thumbnail || THUMBNAIL_FALLBACK}
+                  className="w-full h-full object-cover"
+                />
+                {i === index && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <span className="text-white text-lg">▶️</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 text-white text-sm line-clamp-2">
+                {i + 1}. {v.title}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <VideoTopRow video={video} />
-    </>
-  )
+    </div>
+  );
 };

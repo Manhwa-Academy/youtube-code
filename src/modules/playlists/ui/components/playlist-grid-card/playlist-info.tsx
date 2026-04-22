@@ -27,9 +27,9 @@ export const PlaylistInfo = ({
         <h3 className="font-medium line-clamp-1 lg:line-clamp-2 text-sm break-words">
           {data.name}
         </h3>
-        <p className="text-sm text-muted-foreground">Playlist</p>
+        <p className="text-sm text-muted-foreground">Danh sách phát</p>
         <p className="text-sm text-muted-foreground font-semibold hover:text-primary">
-          View full playlist
+         Xem tất cả video
         </p>
       </div>
     </div>

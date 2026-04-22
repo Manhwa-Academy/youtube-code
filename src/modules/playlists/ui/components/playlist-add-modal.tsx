@@ -61,7 +61,7 @@ export const PlaylistAddModal = ({
 
   return (
     <ResponsiveModal
-      title="Add to playlist"
+      title="Thêm vào danh sách kết hợp"
       open={open}
       onOpenChange={onOpenChange}
     >

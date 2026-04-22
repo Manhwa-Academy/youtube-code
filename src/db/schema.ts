@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import { boolean } from "drizzle-orm/pg-core"; // ✅ chắc chắn import từ pg-core
 import {
   foreignKey,
   integer,
@@ -124,6 +125,7 @@ export const playlists = pgTable("playlists", {
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  isMixPlaylist: boolean("is_mix_playlist").default(false).notNull(), // THÊM CỘT NÀY
 });
 
 export const playlistRelations = relations(playlists, ({ one, many }) => ({

@@ -11,57 +11,61 @@ interface PlaylistAddModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   videoId: string;
-};
+}
 
 export const PlaylistAddModal = ({
   open,
   onOpenChange,
-  videoId
+  videoId,
 }: PlaylistAddModalProps) => {
   const utils = trpc.useUtils();
-  const { 
+
+  const {
     data: playlists,
     isLoading,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = trpc.playlists.getManyForVideo.useInfiniteQuery({
-    limit: DEFAULT_LIMIT,
-    videoId,
-  }, {
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    enabled: !!videoId && open,
-  });
+  } = trpc.playlists.getManyForVideo.useInfiniteQuery(
+    {
+      limit: DEFAULT_LIMIT,
+      videoId,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !!videoId && open,
+    },
+  );
 
   const addVideo = trpc.playlists.addVideo.useMutation({
     onSuccess: (data) => {
-      toast.success("Video added to playlist");
+      toast.success("Đã thêm video vào danh sách phát");
       utils.playlists.getMany.invalidate();
       utils.playlists.getManyForVideo.invalidate({ videoId });
-      utils.playlists.getOne.invalidate({ id: data.playlistId })
-      utils.playlists.getVideos.invalidate({ playlistId: data.playlistId })
+      utils.playlists.getOne.invalidate({ id: data.playlistId });
+      utils.playlists.getVideos.invalidate({ playlistId: data.playlistId });
     },
     onError: () => {
-      toast.error("Something went wrong");
+      toast.error("Đã có lỗi xảy ra");
     },
   });
 
   const removeVideo = trpc.playlists.removeVideo.useMutation({
     onSuccess: (data) => {
-      toast.success("Video removed from playlist");
+      toast.success("Đã gỡ video khỏi danh sách phát");
       utils.playlists.getMany.invalidate();
       utils.playlists.getManyForVideo.invalidate({ videoId });
-      utils.playlists.getOne.invalidate({ id: data.playlistId })
-      utils.playlists.getVideos.invalidate({ playlistId: data.playlistId })
+      utils.playlists.getOne.invalidate({ id: data.playlistId });
+      utils.playlists.getVideos.invalidate({ playlistId: data.playlistId });
     },
     onError: () => {
-      toast.error("Something went wrong");
+      toast.error("Đã có lỗi xảy ra");
     },
   });
 
   return (
     <ResponsiveModal
-      title="Thêm vào danh sách kết hợp"
+      title="Thêm vào danh sách phát"
       open={open}
       onOpenChange={onOpenChange}
     >
@@ -71,20 +75,21 @@ export const PlaylistAddModal = ({
             <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
           </div>
         )}
+
         {!isLoading &&
           playlists?.pages
             .flatMap((page) => page.items)
             .map((playlist) => (
-              <Button 
+              <Button
                 key={playlist.id}
                 variant="ghost"
                 className="w-full justify-start px-2 [&_svg]:size-5"
                 size="lg"
                 onClick={() => {
                   if (playlist.containsVideo) {
-                    removeVideo.mutate({ playlistId: playlist.id, videoId })
+                    removeVideo.mutate({ playlistId: playlist.id, videoId });
                   } else {
-                    addVideo.mutate({ playlistId: playlist.id, videoId })
+                    addVideo.mutate({ playlistId: playlist.id, videoId });
                   }
                 }}
                 disabled={removeVideo.isPending || addVideo.isPending}
@@ -96,8 +101,8 @@ export const PlaylistAddModal = ({
                 )}
                 {playlist.name}
               </Button>
-            ))
-        }
+            ))}
+
         {!isLoading && (
           <InfiniteScroll
             hasNextPage={hasNextPage}

@@ -211,10 +211,11 @@ export const playlistsRouter = createTRPCRouter({
         name: z.string().min(1),
         videoIds: z.array(z.string().uuid()).min(1),
         description: z.string().optional(),
+        visibility: z.enum(["public", "private"]).default("public"), // ✅ Thêm field này
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { name, videoIds, description } = input;
+      const { name, videoIds, description, visibility } = input;
       const { id: userId } = ctx.user;
 
       // Kiểm tra tất cả video là của chủ user
@@ -230,7 +231,7 @@ export const playlistsRouter = createTRPCRouter({
         });
       }
 
-      // Tạo playlist mix
+      // Tạo playlist mix với visibility
       const [playlist] = await db
         .insert(playlists)
         .values({
@@ -238,6 +239,7 @@ export const playlistsRouter = createTRPCRouter({
           name,
           description,
           isMixPlaylist: true,
+          visibility, // ✅ dùng input.visibility
         })
         .returning();
 
@@ -291,6 +293,31 @@ export const playlistsRouter = createTRPCRouter({
 
     return result;
   }),
+  updateVisibility: protectedProcedure
+    .input(
+      z.object({
+        playlistId: z.string().uuid(),
+        visibility: z.enum(["public", "private"]),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { playlistId, visibility } = input;
+      const { id: userId } = ctx.user;
+
+      const [updated] = await db
+        .update(playlists)
+        .set({ visibility })
+        .where(eq(playlists.id, playlistId))
+        .returning();
+
+      if (!updated) {
+        throw new Error(
+          "Không tìm thấy danh sách hoặc không có quyền chỉnh sửa",
+        );
+      }
+
+      return updated;
+    }),
   addVideo: protectedProcedure
     .input(
       z.object({

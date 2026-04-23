@@ -1,6 +1,9 @@
+// ====================== DRIZZLE & ZOD IMPORTS ======================
 import { relations } from "drizzle-orm";
-import { boolean } from "drizzle-orm/pg-core"; // ✅ chắc chắn import từ pg-core
+
+// PostgreSQL core types
 import {
+  boolean,
   foreignKey,
   integer,
   pgEnum,
@@ -11,18 +14,20 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+
+// Zod schemas cho insert / select / update
 import {
   createInsertSchema,
   createSelectSchema,
   createUpdateSchema,
 } from "drizzle-zod";
-
 // ====================== ENUMS ======================
 export const reactionType = pgEnum("reaction_type", ["like", "dislike"]);
 export const videoVisibility = pgEnum("video_visibility", [
   "private",
   "public",
 ]);
+export const playlistVisibility = pgEnum("playlist_visibility", ["public", "private"]);
 
 // ====================== USERS ======================
 export const users = pgTable(
@@ -125,7 +130,8 @@ export const playlists = pgTable("playlists", {
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  isMixPlaylist: boolean("is_mix_playlist").default(false).notNull(), // THÊM CỘT NÀY
+  isMixPlaylist: boolean("is_mix_playlist").default(false).notNull(),
+  visibility: playlistVisibility("visibility").default("public").notNull(), // dùng enum thay vì varchar
 });
 
 export const playlistRelations = relations(playlists, ({ one, many }) => ({
@@ -223,26 +229,50 @@ export const comments = pgTable(
   ],
 );
 
-export const commentReactions = pgTable("comment_reactions", {
-  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  commentId: uuid("comment_id").references(() => comments.id, { onDelete: "cascade" }).notNull(),
-  type: reactionType("type").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (t) => [
-  primaryKey({ name: "comment_reactions_pk", columns: [t.userId, t.commentId] }),
-]);
+export const commentReactions = pgTable(
+  "comment_reactions",
+  {
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    commentId: uuid("comment_id")
+      .references(() => comments.id, { onDelete: "cascade" })
+      .notNull(),
+    type: reactionType("type").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({
+      name: "comment_reactions_pk",
+      columns: [t.userId, t.commentId],
+    }),
+  ],
+);
 
-export const commentReactionRelations = relations(commentReactions, ({ one }) => ({
-  user: one(users, { fields: [commentReactions.userId], references: [users.id] }),
-  comment: one(comments, { fields: [commentReactions.commentId], references: [comments.id] }),
-}));
+export const commentReactionRelations = relations(
+  commentReactions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [commentReactions.userId],
+      references: [users.id],
+    }),
+    comment: one(comments, {
+      fields: [commentReactions.commentId],
+      references: [comments.id],
+    }),
+  }),
+);
 
 // Bây giờ mới định nghĩa commentRelations
 export const commentRelations = relations(comments, ({ one, many }) => ({
   user: one(users, { fields: [comments.userId], references: [users.id] }),
   video: one(videos, { fields: [comments.videoId], references: [videos.id] }),
-  parent: one(comments, { fields: [comments.parentId], references: [comments.id], relationName: "comments_parent_id_fkey" }),
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+    relationName: "comments_parent_id_fkey",
+  }),
   reactions: many(commentReactions), // ok, đã biết commentReactions
   replies: many(comments, { relationName: "comments_parent_id_fkey" }),
 }));

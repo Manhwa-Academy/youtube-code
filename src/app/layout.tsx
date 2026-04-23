@@ -4,7 +4,9 @@ import { ClerkProvider } from "@clerk/nextjs";
 
 import { TRPCProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
+import { ScrollToTopCharacter } from "@/components/scroll-to-top";
 
+import ClickEffect from "@/components/ui/ClickEffect";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -28,7 +30,8 @@ export default function RootLayout({
         <body className={inter.className}>
           <TRPCProvider>
             <Toaster />
-            {children}
+            <ClickEffect imageSrc="/toTop.Cuiv4RfP.svg">{children}</ClickEffect>
+            <ScrollToTopCharacter />
           </TRPCProvider>
         </body>
       </html>

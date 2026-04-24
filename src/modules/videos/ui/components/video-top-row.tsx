@@ -9,11 +9,15 @@ import { VideoReactions } from "./video-reactions";
 import { VideoDescription } from "./video-description";
 import { formatDistanceToNowStrict } from "date-fns";
 import { vi } from "date-fns/locale";
-
+import { VideoPlaybackMenu } from "./video-playback-menu";
 import { VideoGetOneOutput } from "../../types";
 
 interface VideoTopRowProps {
   video: VideoGetOneOutput;
+  autoNextEnabled: boolean;
+  setAutoNextEnabled: (v: boolean) => void;
+  loopEnabled: boolean;
+  setLoopEnabled: (v: boolean) => void;
 }
 
 export const VideoTopRowSkeleton = () => {
@@ -37,7 +41,13 @@ export const VideoTopRowSkeleton = () => {
   );
 };
 
-export const VideoTopRow = ({ video }: VideoTopRowProps) => {
+export const VideoTopRow = ({
+  video,
+  autoNextEnabled,
+  setAutoNextEnabled,
+  loopEnabled,
+  setLoopEnabled,
+}: VideoTopRowProps) => {
   const compactViews = useMemo(() => {
     return Intl.NumberFormat("vi-VN", {
       notation: "compact",
@@ -69,6 +79,13 @@ export const VideoTopRow = ({ video }: VideoTopRowProps) => {
             likes={video.likeCount}
             dislikes={video.dislikeCount}
             viewerReaction={video.viewerReaction}
+          />
+
+          <VideoPlaybackMenu
+            autoNextEnabled={autoNextEnabled}
+            setAutoNextEnabled={setAutoNextEnabled}
+            loopEnabled={loopEnabled}
+            setLoopEnabled={setLoopEnabled}
           />
           <VideoMenu videoId={video.id} variant="secondary" />
         </div>

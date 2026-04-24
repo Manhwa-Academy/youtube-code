@@ -46,9 +46,17 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
   const index = Number(params.get("index") || 0);
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const [currentIndex, setCurrentIndex] = useState(index);
-
+  const [autoNextEnabled, setAutoNextEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("autoNext");
+    return saved === null ? true : saved === "true";
+  });
   const [video] = trpc.videos.getOne.useSuspenseQuery({ id: currentVideoId });
-
+  const [loopEnabled, setLoopEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const saved = localStorage.getItem("loop");
+    return saved === "true";
+  });
   // 🔹 Sử dụng public playlist
   const { data: playlists } = trpc.playlists.getPublicMixPlaylists.useQuery();
   const playlist = playlists?.find((p) => p.id === playlistId);
@@ -98,9 +106,17 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
     createView.mutate({ videoId });
   };
 
+  useEffect(() => {
+    localStorage.setItem("autoNext", autoNextEnabled.toString());
+  }, [autoNextEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem("loop", loopEnabled.toString());
+  }, [loopEnabled]);
+  
   return (
     <div className="flex flex-col gap-4">
-      {/* Video Player */}
+      {/* 🎬 Video Player */}
       <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg">
         <VideoPlayer
           key={currentVideoId}
@@ -109,25 +125,38 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
           playbackId={video.muxPlaybackId}
           thumbnailUrl={video.thumbnailUrl}
           nextVideo={nextVideo}
+          autoNextEnabled={autoNextEnabled}
+          loopEnabled={loopEnabled}
         />
       </div>
 
-      {/* Playlist toggle button */}
+      {/* 🧾 Info + controls */}
+      <VideoTopRow
+        video={video}
+        autoNextEnabled={autoNextEnabled}
+        setAutoNextEnabled={setAutoNextEnabled}
+        loopEnabled={loopEnabled}
+        setLoopEnabled={setLoopEnabled}
+      />
+
+      {/* 📌 NÚT PLAYLIST */}
       {playlist && (
         <button
-          className="text-sm text-blue-500 hover:text-blue-600 font-medium mt-2 self-start"
+          className="text-sm text-blue-500 hover:text-blue-600 font-medium mt-1 self-start"
           onClick={() => setShowPlaylist((prev) => !prev)}
         >
           {showPlaylist ? "Ẩn danh sách kết hợp" : "Xem danh sách kết hợp"}
         </button>
       )}
 
+      {/* 📚 PLAYLIST */}
       {showPlaylist && playlist && (
         <div className="w-full mt-2 max-h-72 overflow-y-auto bg-gray-900/90 backdrop-blur-md rounded-lg shadow-xl p-3 border border-gray-700">
           <div className="text-white font-semibold text-sm mb-2">
             {playlist.name}
           </div>
-          {playlist.videos.map((v: (typeof playlist.videos)[0], i: number) => (
+
+          {playlist.videos.map((v, i) => (
             <div
               key={v.id}
               className={cn(
@@ -149,12 +178,14 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
                   src={v.thumbnail || THUMBNAIL_FALLBACK}
                   className="w-full h-full object-cover"
                 />
+
                 {i === index && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                     <span className="text-white text-lg">▶️</span>
                   </div>
                 )}
               </div>
+
               <div className="flex-1 text-white text-sm line-clamp-2">
                 {i + 1}. {v.title}
               </div>
@@ -162,8 +193,6 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
           ))}
         </div>
       )}
-
-      <VideoTopRow video={video} />
     </div>
   );
 };

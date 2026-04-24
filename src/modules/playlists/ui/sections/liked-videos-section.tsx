@@ -23,21 +23,22 @@ export const LikedVideosSection = () => {
 const LikedVideosSectionSkeleton = () => {
   return (
     <div>
+      {/* Mobile / Grid */}
       <div className="flex flex-col gap-4 gap-y-10 md:hidden">
         {Array.from({ length: 18 }).map((_, index) => (
-            <VideoGridCardSkeleton key={index} />
-          ))
-        }
+          <VideoGridCardSkeleton key={index} />
+        ))}
       </div>
+
+      {/* Desktop / Row */}
       <div className="hidden flex-col gap-4 md:flex">
         {Array.from({ length: 18 }).map((_, index) => (
-            <VideoRowCardSkeleton key={index} size="compact" />
-          ))
-        }
+          <VideoRowCardSkeleton key={index} size="compact" />
+        ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
 const LikedVideosSectionSuspense = () => {
   const [videos, query] = trpc.playlists.getLiked.useSuspenseInfiniteQuery(
@@ -47,29 +48,46 @@ const LikedVideosSectionSuspense = () => {
     }
   );
 
+  // 🔥 map progress cho mỗi video, default = 0 nếu chưa có
+  const mapVideoWithProgress = (video: any) => ({
+    ...video,
+    progress: video.progress ?? 0,
+  });
+
   return (
     <>
+      {/* Mobile / Grid */}
       <div className="flex flex-col gap-4 gap-y-10 md:hidden">
         {videos.pages
           .flatMap((page) => page.items)
           .map((video) => (
-            <VideoGridCard key={video.id} data={video} />
-          ))
-        }
+            <VideoGridCard
+              key={video.id}
+              data={mapVideoWithProgress(video)} // 🔥 truyền progress
+            />
+          ))}
       </div>
+
+      {/* Desktop / Row */}
       <div className="hidden flex-col gap-4 md:flex">
         {videos.pages
           .flatMap((page) => page.items)
           .map((video) => (
-            <VideoRowCard key={video.id} data={video} size="compact" />
-          ))
-        }
+            <VideoRowCard
+              key={video.id}
+              data={mapVideoWithProgress(video)} // 🔥 truyền data với progress
+              size="compact"
+              progress={mapVideoWithProgress(video).progress} // 🔥 truyền progress riêng
+            />
+          ))}
       </div>
+
+      {/* Infinite scroll */}
       <InfiniteScroll
         hasNextPage={query.hasNextPage}
         isFetchingNextPage={query.isFetchingNextPage}
         fetchNextPage={query.fetchNextPage}
       />
     </>
-  )
-}
+  );
+};

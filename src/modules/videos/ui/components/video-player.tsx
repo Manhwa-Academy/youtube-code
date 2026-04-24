@@ -24,6 +24,7 @@ interface VideoPlayerProps {
 
   autoNextEnabled?: boolean; // ✅ NEW
   loopEnabled?: boolean;
+  onTimeUpdate?: (current: number, duration: number) => void; // 👈 THÊM
 }
 
 export const VideoPlayerSkeleton = () => {
@@ -39,6 +40,7 @@ export const VideoPlayer = ({
   onEnded,
   autoNextEnabled = true, // ✅ default bật
   loopEnabled = false,
+  onTimeUpdate, // 👈 THÊM
 }: VideoPlayerProps) => {
   const router = useRouter();
   const playerRef = useRef<any>(null);
@@ -128,6 +130,13 @@ export const VideoPlayer = ({
         className="w-full h-full object-contain"
         accentColor="#FF2056"
         onPlay={onPlay}
+        // 🔥 THÊM ĐOẠN NÀY
+        onTimeUpdate={(e: any) => {
+          const current = e.target.currentTime;
+          const duration = e.target.duration;
+
+          onTimeUpdate?.(current, duration);
+        }}
       />
 
       {/* OVERLAY */}

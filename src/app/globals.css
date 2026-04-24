@@ -86,3 +86,13 @@ body {
     @apply bg-background text-foreground;
   }
 }
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}

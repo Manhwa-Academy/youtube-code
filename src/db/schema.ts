@@ -27,7 +27,10 @@ export const videoVisibility = pgEnum("video_visibility", [
   "private",
   "public",
 ]);
-export const playlistVisibility = pgEnum("playlist_visibility", ["public", "private"]);
+export const playlistVisibility = pgEnum("playlist_visibility", [
+  "public",
+  "private",
+]);
 
 // ====================== USERS ======================
 export const users = pgTable(
@@ -314,9 +317,13 @@ export const videoViews = pgTable(
     userId: uuid("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
+
     videoId: uuid("video_id")
       .references(() => videos.id, { onDelete: "cascade" })
       .notNull(),
+
+    progress: integer("progress").default(0).notNull(), // 👈 THÊM
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

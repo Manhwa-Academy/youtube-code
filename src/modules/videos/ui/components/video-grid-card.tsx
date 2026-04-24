@@ -38,7 +38,7 @@ export const VideoGridCard = ({
   const [showPlaylist, setShowPlaylist] = useState(false);
 
   const handleTogglePlaylist = () => setShowPlaylist((prev) => !prev);
-
+  const progress = data.progress ?? 0;
   return (
     <div className="flex flex-col gap-2 w-full group">
       {/* Video thumbnail */}
@@ -48,6 +48,7 @@ export const VideoGridCard = ({
           previewUrl={data.previewUrl}
           title={data.title}
           duration={data.duration}
+          progress={progress}
         />
       </Link>
 

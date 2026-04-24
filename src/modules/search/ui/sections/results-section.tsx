@@ -5,7 +5,6 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
-
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { VideoRowCard, VideoRowCardSkeleton } from "@/modules/videos/ui/components/video-row-card";
 import { VideoGridCard, VideoGridCardSkeleton } from "@/modules/videos/ui/components/video-grid-card";
@@ -56,24 +55,41 @@ const ResultsSectionSuspense = ({
     }
   );
 
+  // 🔥 map progress cho mỗi video, default = 0
+  const mapVideoWithProgress = (video: any) => ({
+    ...video,
+    progress: video.progress ?? 0,
+  });
+
   return (
     <>
+      {/* Mobile / Grid */}
       <div className="flex flex-col gap-4 gap-y-10 md:hidden">
         {results.pages
           .flatMap((page) => page.items)
           .map((video) => (
-            <VideoGridCard key={video.id} data={video} />
+            <VideoGridCard
+              key={video.id}
+              data={mapVideoWithProgress(video)} // 🔥 thêm progress
+            />
           ))
         }
       </div>
+
+      {/* Desktop / Row */}
       <div className="hidden flex-col gap-4 md:flex">
         {results.pages
           .flatMap((page) => page.items)
           .map((video) => (
-            <VideoRowCard key={video.id} data={video} />
+            <VideoRowCard
+              key={video.id}
+              data={mapVideoWithProgress(video)} // 🔥 thêm progress
+              progress={mapVideoWithProgress(video).progress} // 🔥 truyền riêng cho VideoRowCard
+            />
           ))
         }
       </div>
+
       <InfiniteScroll
         hasNextPage={resultsQuery.hasNextPage}
         isFetchingNextPage={resultsQuery.isFetchingNextPage}

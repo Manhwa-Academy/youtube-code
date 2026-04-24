@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { ErrorBoundary } from "react-error-boundary";
 import { useSearchParams } from "next/navigation";
@@ -98,14 +98,32 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
   }, [playlistId, next, suggestions, index]);
 
   const createView = trpc.videoViews.create.useMutation({
-    onSuccess: () => utils.videos.getOne.invalidate({ id: videoId }),
+    onSuccess: () => utils.videos.getOne.invalidate({ id: currentVideoId }),
   });
-
+  const updateProgress = trpc.videos.updateProgress.useMutation();
   const handlePlay = () => {
     if (!isSignedIn) return;
     createView.mutate({ videoId });
   };
+  const lastSavedRef = useRef(0);
 
+  const handleTimeUpdate = (current: number, duration: number) => {
+    if (!duration) return;
+
+    let percent = Math.floor((current / duration) * 100);
+
+    if (percent > 90) percent = 100;
+
+    // tránh spam DB
+    if (Math.abs(percent - lastSavedRef.current) >= 5) {
+      lastSavedRef.current = percent;
+
+      updateProgress.mutate({
+        videoId: currentVideoId,
+        progress: percent,
+      });
+    }
+  };
   useEffect(() => {
     localStorage.setItem("autoNext", autoNextEnabled.toString());
   }, [autoNextEnabled]);
@@ -113,7 +131,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
   useEffect(() => {
     localStorage.setItem("loop", loopEnabled.toString());
   }, [loopEnabled]);
-  
+
   return (
     <div className="flex flex-col gap-4">
       {/* 🎬 Video Player */}
@@ -127,6 +145,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
           nextVideo={nextVideo}
           autoNextEnabled={autoNextEnabled}
           loopEnabled={loopEnabled}
+          onTimeUpdate={handleTimeUpdate}
         />
       </div>
 

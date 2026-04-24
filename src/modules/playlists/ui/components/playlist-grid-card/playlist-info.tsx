@@ -5,7 +5,12 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 import { PlaylistGetManyOutput } from "../../../types";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreVerticalIcon } from "lucide-react";
 
@@ -29,13 +34,16 @@ export const PlaylistInfo = ({ data }: PlaylistInfoProps) => {
   const [visibility, setVisibility] = useState<"public" | "private">(
     data.visibility,
   );
-
+  const utils = trpc.useUtils(); // ✅ THÊM DÒNG NÀY
   // TRPC mutation update visibility
   const updateVisibility = trpc.playlists.updateVisibility.useMutation({
     onSuccess: (data) => {
       toast.success(
         `Cập nhật quyền ${data.visibility === "public" ? "công khai" : "riêng tư"} thành công!`,
       );
+      // 🔥 refresh lại dữ liệu
+      utils.playlists.getPublicMixPlaylists.invalidate();
+      utils.playlists.getMany.invalidate(); // 👈 thêm luôn cho chắc
     },
     onError: () => toast.error("Cập nhật quyền thất bại!"),
   });

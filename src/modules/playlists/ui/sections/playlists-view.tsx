@@ -3,49 +3,47 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
 import { THUMBNAIL_FALLBACK } from "@/modules/videos/constants";
-import { useAuth } from "@clerk/nextjs";
 
 const PAGE_SIZE = 20;
 
 export const PlaylistsView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userId } = useAuth();
 
   const page = Number(searchParams.get("page") || "1");
 
-  const { data, isLoading } = trpc.playlists.getMany.useQuery({
-    limit: PAGE_SIZE * page,
-  });
+  // ✅ DÙNG API PUBLIC
+  const { data, isLoading } =
+    trpc.playlists.getPublicMixPlaylists.useQuery();
 
   if (isLoading) {
     return <p className="p-4">Đang tải...</p>;
   }
 
-  if (!data?.items || data.items.length === 0) {
+  if (!data || data.length === 0) {
     return <p className="p-4">Chưa có danh sách kết hợp nào</p>;
   }
 
-  const visiblePlaylists = data.items.filter(
-    (p) => p.visibility === "public" || p.user.id === userId,
-  );
+  // ✅ KHÔNG CẦN FILTER NỮA
+  const totalPages = Math.ceil(data.length / PAGE_SIZE);
 
-  const totalPages = Math.ceil(visiblePlaylists.length / PAGE_SIZE);
-  const currentPlaylists = visiblePlaylists.slice(
+  const currentPlaylists = data.slice(
     PAGE_SIZE * (page - 1),
     PAGE_SIZE * page,
   );
 
   return (
     <div className="px-4 mt-4">
-      <h2 className="text-lg font-semibold mb-4">Danh sách kết hợp</h2>
+      <h2 className="text-lg font-semibold mb-4">
+        Danh sách kết hợp
+      </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {currentPlaylists.map((playlist) => {
           const videoCount = playlist.videoCount ?? 0;
-          const thumbnail = playlist.thumbnailUrl || THUMBNAIL_FALLBACK;
+          const thumbnail = playlist.thumbnail || THUMBNAIL_FALLBACK;
 
-          const firstVideoId = playlist.firstVideoId;
+          const firstVideoId = playlist.videos?.[0]?.id;
 
           return (
             <div
@@ -77,7 +75,9 @@ export const PlaylistsView = () => {
               <p className="mt-2 text-sm font-semibold line-clamp-2">
                 {playlist.name}
               </p>
-              <p className="text-xs text-muted-foreground">Danh sách kết hợp</p>
+              <p className="text-xs text-muted-foreground">
+                Danh sách kết hợp
+              </p>
             </div>
           );
         })}
@@ -86,7 +86,9 @@ export const PlaylistsView = () => {
       {page < totalPages && (
         <div className="flex justify-center mt-6">
           <button
-            onClick={() => router.push(`/playlists?page=${page + 1}`)}
+            onClick={() =>
+              router.push(`/playlists?page=${page + 1}`)
+            }
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >
             Xem thêm

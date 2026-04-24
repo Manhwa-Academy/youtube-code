@@ -255,11 +255,12 @@ export const playlistsRouter = createTRPCRouter({
       return playlist;
     }),
   getPublicMixPlaylists: publicProcedure.query(async () => {
-    // Lấy tất cả playlist kết hợp công khai
     const playlistsData = await db
       .select()
       .from(playlists)
-      .where(eq(playlists.isMixPlaylist, true))
+      .where(
+        eq(playlists.visibility, "public"), // ✅ CHỈ LỌC PUBLIC
+      )
       .orderBy(desc(playlists.updatedAt));
 
     const result = [];
@@ -307,13 +308,19 @@ export const playlistsRouter = createTRPCRouter({
       const [updated] = await db
         .update(playlists)
         .set({ visibility })
-        .where(eq(playlists.id, playlistId))
+        .where(
+          and(
+            eq(playlists.id, playlistId),
+            eq(playlists.userId, userId), // ✅ CHẶN NGƯỜI KHÁC
+          ),
+        )
         .returning();
 
       if (!updated) {
-        throw new Error(
-          "Không tìm thấy danh sách hoặc không có quyền chỉnh sửa",
-        );
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Bạn không có quyền chỉnh sửa danh sách này",
+        });
       }
 
       return updated;
@@ -485,10 +492,7 @@ export const playlistsRouter = createTRPCRouter({
         .innerJoin(users, eq(playlists.userId, users.id))
         .where(
           and(
-            or(
-              eq(playlists.visibility, "public"), // 👈 cho phép public
-              eq(playlists.userId, userId), // 👈 hoặc của mình
-            ),
+            eq(playlists.userId, userId), // ✅ CHỈ CỦA MÌNH
             cursor
               ? or(
                   lt(playlists.updatedAt, cursor.updatedAt),
@@ -500,6 +504,7 @@ export const playlistsRouter = createTRPCRouter({
               : undefined,
           ),
         )
+
         .orderBy(desc(playlists.updatedAt), desc(playlists.id))
         // Add 1 to the limit to check if there is more data
         .limit(limit + 1);
@@ -656,6 +661,7 @@ export const playlistsRouter = createTRPCRouter({
           .select({
             videoId: videoViews.videoId,
             viewedAt: videoViews.updatedAt,
+            progress: videoViews.progress, // 🔴 Thêm dòng này
           })
           .from(videoViews)
           .where(eq(videoViews.userId, userId)),
@@ -667,6 +673,7 @@ export const playlistsRouter = createTRPCRouter({
           ...getTableColumns(videos),
           user: users,
           viewedAt: viewerVideoViews.viewedAt,
+          progress: viewerVideoViews.progress, // 🔴 join progress vào output
           viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
           likeCount: db.$count(
             videoReactions,
@@ -701,13 +708,10 @@ export const playlistsRouter = createTRPCRouter({
           ),
         )
         .orderBy(desc(viewerVideoViews.viewedAt), desc(videos.id))
-        // Add 1 to the limit to check if there is more data
         .limit(limit + 1);
 
       const hasMore = data.length > limit;
-      // Remove the last item if there is more data
       const items = hasMore ? data.slice(0, -1) : data;
-      // Set the next cursor to the last item if there is more data
       const lastItem = items[items.length - 1];
       const nextCursor = hasMore
         ? {
@@ -716,9 +720,6 @@ export const playlistsRouter = createTRPCRouter({
           }
         : null;
 
-      return {
-        items,
-        nextCursor,
-      };
+      return { items, nextCursor };
     }),
 });

@@ -44,6 +44,7 @@ const thumbnailVariants = cva("relative flex-none", {
 interface VideoRowCardProps extends VariantProps<typeof videoRowCardVariants> {
   data: VideoGetManyOutput["items"][number];
   onRemove?: () => void;
+  progress?: number; // 🔥 thêm prop progress
 }
 
 export const VideoRowCardSkeleton = ({
@@ -88,6 +89,7 @@ export const VideoRowCard = ({
   data,
   size = "default",
   onRemove,
+  progress = 0, // 🔥 default 0
 }: VideoRowCardProps) => {
   const compactViews = useMemo(() => {
     return Intl.NumberFormat("vi-VN", {
@@ -113,10 +115,11 @@ export const VideoRowCard = ({
           previewUrl={data.previewUrl}
           title={data.title}
           duration={data.duration}
+          progress={progress} // 🔥 truyền progress
         />
       </Link>
 
-      {/* Info*/}
+      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex justify-between gap-x-2">
           <Link prefetch href={`/videos/${data.id}`} className="flex-1 min-w-0">

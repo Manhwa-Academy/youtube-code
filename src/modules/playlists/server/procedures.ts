@@ -472,12 +472,23 @@ export const playlistsRouter = createTRPCRouter({
             ORDER BY pv.updated_at DESC
             LIMIT 1
           )`,
+          // 👇 THÊM ĐOẠN NÀY
+          firstVideoId: sql<string | null>`(
+    SELECT pv.video_id
+    FROM ${playlistVideos} pv
+    WHERE pv.playlist_id = ${playlists.id}
+    ORDER BY pv.updated_at ASC
+    LIMIT 1
+  )`,
         })
         .from(playlists)
         .innerJoin(users, eq(playlists.userId, users.id))
         .where(
           and(
-            eq(playlists.userId, userId),
+            or(
+              eq(playlists.visibility, "public"), // 👈 cho phép public
+              eq(playlists.userId, userId), // 👈 hoặc của mình
+            ),
             cursor
               ? or(
                   lt(playlists.updatedAt, cursor.updatedAt),

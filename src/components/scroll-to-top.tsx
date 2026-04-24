@@ -27,7 +27,7 @@ export const ScrollToTopCharacter = () => {
           <img
             src="/characters/char_full.png"
             alt="Nhân vật lên đầu"
-            className="w-34 h-60" // dùng h-[90px] mới đúng
+            className="w-34 h-47" // dùng h-[90px] mới đúng
           />
         </div>
       )}
@@ -36,7 +36,7 @@ export const ScrollToTopCharacter = () => {
           <img
             src="/characters/char_peek.png"
             alt="Nhân vật nửa ẩn"
-            className="w-24 h-60 opacity-90"
+            className="w-24 h-45 opacity-90"
           />
         </div>
       )}

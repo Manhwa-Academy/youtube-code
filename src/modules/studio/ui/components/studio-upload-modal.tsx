@@ -15,11 +15,11 @@ export const StudioUploadModal = () => {
   const utils = trpc.useUtils();
   const create = trpc.videos.create.useMutation({
     onSuccess: () => {
-      toast.success("Video created");
+      toast.success("Video đang được tạo, bạn có thể bắt đầu upload");
       utils.studio.getMany.invalidate();
     },
     onError: () => {
-      toast.error("Something went wrong");
+      toast.error("Đã xảy ra lỗi vì đủ 10 video trên Mux nên không thể tạo video mới. Vui lòng xóa bớt video cũ hoặc liên hệ support để được hỗ trợ.");
     },
   });
 

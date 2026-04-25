@@ -21,18 +21,18 @@ export const ScrollToTopCharacter = () => {
     <div>
       {show && (
         <div
-          className="fixed bottom-4 right-4 cursor-pointer z-50 transition-all duration-300 hover:scale-125"
+          className="fixed right-4 cursor-pointer z-30 transition-all duration-300 hover:scale-125 bottom-16 sm:bottom-4"
           onClick={scrollToTop}
         >
           <img
             src="/characters/char_full.png"
             alt="Nhân vật lên đầu"
-            className="w-34 h-47" // dùng h-[90px] mới đúng
+            className="w-34 h-[90px]"
           />
         </div>
       )}
       {!show && (
-        <div className="fixed bottom-0 right-0 z-50">
+        <div className="fixed right-0 z-30 bottom-12 sm:bottom-0">
           <img
             src="/characters/char_peek.png"
             alt="Nhân vật nửa ẩn"

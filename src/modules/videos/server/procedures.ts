@@ -448,33 +448,33 @@ export const videosRouter = createTRPCRouter({
 
       return workflowRunId;
     }),
-    updateProgress: protectedProcedure
-  .input(
-    z.object({
-      videoId: z.string(),
-      progress: z.number(),
-    })
-  )
-  .mutation(async ({ ctx, input }) => {
-    const { id: userId } = ctx.user;
+  updateProgress: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.string(),
+        progress: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id: userId } = ctx.user;
 
-    await db
-      .insert(videoViews)
-      .values({
-        userId,
-        videoId: input.videoId,
-        progress: input.progress,
-      })
-      .onConflictDoUpdate({
-        target: [videoViews.userId, videoViews.videoId],
-        set: {
+      await db
+        .insert(videoViews)
+        .values({
+          userId,
+          videoId: input.videoId,
           progress: input.progress,
-          updatedAt: new Date(),
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: [videoViews.userId, videoViews.videoId],
+          set: {
+            progress: input.progress,
+            updatedAt: new Date(),
+          },
+        });
 
-    return { success: true };
-  }),
+      return { success: true };
+    }),
   revalidate: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
@@ -619,24 +619,22 @@ export const videosRouter = createTRPCRouter({
   create: protectedProcedure.mutation(async ({ ctx }) => {
     const { id: userId } = ctx.user;
 
+    // Tạo upload + asset SD ngay lập tức
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         passthrough: userId,
         playback_policy: ["public"],
+        mp4_support: "standard", // ⚡ SD 480p
         input: [
           {
-            generated_subtitles: [
-              {
-                language_code: "en",
-                name: "English",
-              },
-            ],
+            generated_subtitles: [{ language_code: "en", name: "English" }],
           },
         ],
       },
-      cors_origin: "*", // TODO: In production, set to your url
+      cors_origin: "*", // Production URL nếu cần
     });
 
+    // Lưu record video
     const [video] = await db
       .insert(videos)
       .values({
@@ -648,7 +646,7 @@ export const videosRouter = createTRPCRouter({
       .returning();
 
     return {
-      video: video,
+      video,
       url: upload.url,
     };
   }),

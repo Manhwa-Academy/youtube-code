@@ -9,7 +9,6 @@ import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ErrorBoundary } from "react-error-boundary";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { deleteMuxVideo } from "@/lib/mux";
 import {
   CopyCheckIcon,
   CopyIcon,
@@ -154,20 +153,16 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
   });
 
   const remove = trpc.videos.remove.useMutation({
-    onSuccess: async (data) => {
-      // Xóa video trên Mux nếu có assetId
-      if (data.muxAssetId) {
-        await deleteMuxVideo(data.muxAssetId);
-      }
-
+    onSuccess: () => {
       utils.studio.getMany.invalidate();
-      toast.success("Đã xóa video trên DB và Mux");
+      toast.success("Video đã được xóa");
       router.push("/studio");
     },
     onError: () => {
-      toast.error("Đã xảy ra lỗi khi xóa video");
+      toast.error("Đã xảy ra lỗi");
     },
   });
+
 
   const revalidate = trpc.videos.revalidate.useMutation({
     onSuccess: () => {

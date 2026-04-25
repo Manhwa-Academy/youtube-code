@@ -26,7 +26,14 @@ type Video = VideoGetManyOutput["items"][number] & {
     name: string;
     videos: { id: string; title: string; thumbnailUrl?: string | null }[];
   };
+  progress?: number; // 🔥 chắc chắn có progress
 };
+
+// Helper map video với progress mặc định
+const mapVideoWithProgress = (video: Video) => ({
+  ...video,
+  progress: video.progress ?? 0,
+});
 
 export const SuggestionsSection = ({
   videoId,
@@ -64,19 +71,34 @@ const SuggestionsSectionSuspense = ({ videoId }: SuggestionsSectionProps) => {
     limit: DEFAULT_LIMIT,
   });
 
+  // 🔥 map video để đảm bảo progress luôn là number
+const videosWithProgress: Video[] = data.items.map((video) => ({
+  ...video,
+  progress: video.progress ?? 0, // null → 0
+}));
+
   return (
     <>
       {/* Desktop */}
       <div className="hidden md:block space-y-3">
-        {data.items.map((video: Video) => (
-          <VideoRowCard key={video.id} data={video} size="compact" />
+        {videosWithProgress.map((video: Video) => (
+          <VideoRowCard
+            key={video.id}
+            data={video}
+            size="compact"
+            progress={video.progress} // 🔥 truyền xuống RowCard
+          />
         ))}
       </div>
 
       {/* Mobile */}
       <div className="block md:hidden space-y-10">
-        {data.items.map((video: Video) => (
-          <VideoGridCard key={video.id} data={video} />
+        {videosWithProgress.map((video: Video) => (
+          <VideoGridCard
+            key={video.id}
+            data={video}
+            progress={video.progress} // 🔥 truyền xuống GridCard
+          />
         ))}
       </div>
     </>

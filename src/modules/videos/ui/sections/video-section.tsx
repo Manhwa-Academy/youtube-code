@@ -106,7 +106,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
     createView.mutate({ videoId });
   };
   const lastSavedRef = useRef(0);
-
+  const playerRef = useRef<any>(null);
   const handleTimeUpdate = (current: number, duration: number) => {
     if (!duration) return;
 
@@ -137,9 +137,9 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
       {/* 🎬 Video Player */}
       <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg">
         <VideoPlayer
+          ref={playerRef} // 🔹 thêm ref
           key={currentVideoId}
           autoPlay
-          onPlay={handlePlay}
           playbackId={video.muxPlaybackId}
           thumbnailUrl={video.thumbnailUrl}
           nextVideo={nextVideo}
@@ -150,13 +150,14 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
       </div>
 
       {/* 🧾 Info + controls */}
-      <VideoTopRow
-        video={video}
-        autoNextEnabled={autoNextEnabled}
-        setAutoNextEnabled={setAutoNextEnabled}
-        loopEnabled={loopEnabled}
-        setLoopEnabled={setLoopEnabled}
-      />
+   <VideoTopRow
+  video={video}
+  playerRef={playerRef} // 🔹 truyền xuống
+  autoNextEnabled={autoNextEnabled}
+  setAutoNextEnabledAction={setAutoNextEnabled} // ✅ đổi tên
+  loopEnabled={loopEnabled}
+  setLoopEnabledAction={setLoopEnabled}         // ✅ đổi tên
+/>
 
       {/* 📌 NÚT PLAYLIST */}
       {playlist && (

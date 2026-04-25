@@ -16,6 +16,7 @@ interface VideoGridCardProps {
     videos: { id: string; title: string; thumbnailUrl?: string | null }[];
   };
   currentIndex?: number;
+  progress?: number; // 🔥 thêm prop progress
 }
 
 // Skeleton export để SuggestionsSection sử dụng

@@ -1,6 +1,12 @@
 import { toast } from "sonner";
 import { useState } from "react";
-import { ListPlusIcon, MoreVerticalIcon, ShareIcon, Trash2Icon, PlusIcon } from "lucide-react";
+import {
+  ListPlusIcon,
+  MoreVerticalIcon,
+  ShareIcon,
+  Trash2Icon,
+  PlusIcon,
+} from "lucide-react";
 
 import { APP_URL } from "@/constants";
 import { Button } from "@/components/ui/button";
@@ -20,7 +26,11 @@ interface VideoMenuProps {
   onRemove?: () => void;
 }
 
-export const VideoMenu = ({ videoId, variant = "ghost", onRemove }: VideoMenuProps) => {
+export const VideoMenu = ({
+  videoId,
+  variant = "ghost",
+  onRemove,
+}: VideoMenuProps) => {
   const [isOpenPlaylistAddModal, setIsOpenPlaylistAddModal] = useState(false);
   const [isOpenCreateModal, setIsOpenCreateModal] = useState(false);
 
@@ -68,11 +78,10 @@ export const VideoMenu = ({ videoId, variant = "ghost", onRemove }: VideoMenuPro
             <PlusIcon className="mr-2 size-4" />
             Tạo playlist kết hợp mới
           </DropdownMenuItem>
-
           {onRemove && (
             <DropdownMenuItem onClick={onRemove}>
               <Trash2Icon className="mr-2 size-4" />
-              Xóa
+              Xóa khỏi lịch sử
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

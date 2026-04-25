@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, getTableColumns, lt, or, sql } from "drizzle-orm";
 import { categories } from "@/db/schema";
+
 import { db } from "@/db";
 import { inArray } from "drizzle-orm"; // 🔥 nhớ import
 import {
@@ -546,6 +547,12 @@ export const playlistsRouter = createTRPCRouter({
 
       return createdPlaylist;
     }),
+  getHistoryTracking: protectedProcedure.query(async ({ ctx }) => {
+    const { id: userId } = ctx.user;
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+    return user.trackHistory; // trả về boolean
+  }),
   getLiked: protectedProcedure
     .input(
       z.object({
@@ -639,6 +646,44 @@ export const playlistsRouter = createTRPCRouter({
         items,
         nextCursor,
       };
+    }),
+  removeFromHistory: protectedProcedure
+    .input(z.object({ videoId: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      const { videoId } = input;
+      const { id: userId } = ctx.user;
+
+      const [deleted] = await db
+        .delete(videoViews)
+        .where(
+          and(eq(videoViews.userId, userId), eq(videoViews.videoId, videoId)),
+        )
+        .returning();
+
+      if (!deleted) throw new TRPCError({ code: "NOT_FOUND" });
+      return deleted;
+    }),
+  clearHistory: protectedProcedure.mutation(async ({ ctx }) => {
+    const { id: userId } = ctx.user;
+
+    await db.delete(videoViews).where(eq(videoViews.userId, userId));
+
+    return { success: true };
+  }),
+  toggleHistoryTracking: protectedProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const { enabled } = input;
+      const { id: userId } = ctx.user;
+
+      // Giả sử bạn có field 'trackHistory' trong bảng users
+      const [updated] = await db
+        .update(users)
+        .set({ trackHistory: enabled })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updated;
     }),
   getHistory: protectedProcedure
     .input(

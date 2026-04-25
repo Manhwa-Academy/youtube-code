@@ -42,6 +42,7 @@ export const users = pgTable(
     bannerUrl: text("banner_url"),
     bannerKey: text("banner_key"),
     imageUrl: text("image_url").notNull(),
+    trackHistory: boolean("track_history").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

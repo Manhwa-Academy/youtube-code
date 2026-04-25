@@ -50,32 +50,6 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
     const [countdown, setCountdown] = useState(6);
     const [hasRedirected, setHasRedirected] = useState(false);
 
-    // 🟢 Thêm method chọn chất lượng và ép bỏ Auto
-    useEffect(() => {
-      if (!playerRef.current) return;
-
-      playerRef.current.setQuality = (label: "1080p" | "720p" | "480p") => {
-        const map: Record<string, "high" | "medium" | "low"> = {
-          "1080p": "high",
-          "720p": "medium",
-          "480p": "low",
-        };
-
-        // 🔥 Ép chất lượng và bỏ Auto bằng load()
-        if (playerRef.current.load) {
-          playerRef.current.load({
-            playbackId: playerRef.current.playbackId,
-            preferredVideoQuality: map[label], // "low"/"medium"/"high"
-          });
-        } else {
-          // fallback nếu load không có
-          playerRef.current.preferredVideoQuality = map[label];
-          if (playerRef.current.reload) playerRef.current.reload();
-        }
-
-        console.log("Changed quality to", label);
-      };
-    }, [playerRef]);
     // 🎬 Video ended
     useEffect(() => {
       const player = playerRef.current;

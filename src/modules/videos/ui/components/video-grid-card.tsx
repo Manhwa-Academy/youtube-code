@@ -17,6 +17,7 @@ interface VideoGridCardProps {
   };
   currentIndex?: number;
   progress?: number; // 🔥 thêm prop progress
+  menu?: React.ReactNode; // ✅ thêm prop menu
 }
 
 // Skeleton export để SuggestionsSection sử dụng
@@ -35,13 +36,18 @@ export const VideoGridCard = ({
   onRemove,
   playlist,
   currentIndex = 0,
+  menu, // nhận menu
 }: VideoGridCardProps) => {
   const [showPlaylist, setShowPlaylist] = useState(false);
 
   const handleTogglePlaylist = () => setShowPlaylist((prev) => !prev);
   const progress = data.progress ?? 0;
+
   return (
-    <div className="flex flex-col gap-2 w-full group">
+    <div className="flex flex-col gap-2 w-full group relative">
+      {/* Nếu có menu, hiển thị góc trên bên phải */}
+      {menu && <div className="absolute top-2 right-2 z-10">{menu}</div>}
+
       {/* Video thumbnail */}
       <Link prefetch href={`/videos/${data.id}`}>
         <VideoThumbnail
@@ -66,7 +72,7 @@ export const VideoGridCard = ({
         </button>
       )}
 
-      {/* Playlist chỉ hiển thị khi toggle */}
+      {/* Playlist toggle */}
       {showPlaylist && playlist && (
         <div className="w-full mt-2 max-h-[300px] overflow-y-auto">
           <VideoPlaylist playlist={playlist} currentIndex={currentIndex} />

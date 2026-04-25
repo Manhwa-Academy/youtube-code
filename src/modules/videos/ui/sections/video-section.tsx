@@ -40,6 +40,10 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
   const { isSignedIn } = useAuth();
   const utils = trpc.useUtils();
   const params = useSearchParams();
+  const [isTracking, setIsTracking] = useState(true);
+
+  const { data: trackingEnabled } =
+    trpc.playlists.getHistoryTracking.useQuery();
 
   const [showPlaylist, setShowPlaylist] = useState(false);
   const playlistId = params.get("list");
@@ -57,6 +61,18 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
     const saved = localStorage.getItem("loop");
     return saved === "true";
   });
+  useEffect(() => {
+    if (trackingEnabled !== undefined) {
+      setIsTracking(trackingEnabled);
+    }
+  }, [trackingEnabled]);
+  // 🔹 Mutation bật/tắt lưu lịch sử
+  const toggleHistoryTrackingMutation =
+    trpc.playlists.toggleHistoryTracking.useMutation({
+      onSuccess: (_, variables) => {
+        setIsTracking(variables.enabled); // update state ngay sau server trả
+      },
+    });
   // 🔹 Sử dụng public playlist
   const { data: playlists } = trpc.playlists.getPublicMixPlaylists.useQuery();
   const playlist = playlists?.find((p) => p.id === playlistId);
@@ -102,22 +118,20 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
   });
   const updateProgress = trpc.videos.updateProgress.useMutation();
   const handlePlay = () => {
-    if (!isSignedIn) return;
-    createView.mutate({ videoId });
+    if (!isSignedIn || !isTracking) return; // 🔹 chặn khi tạm dừng
+    createView.mutate({ videoId: currentVideoId });
   };
+
   const lastSavedRef = useRef(0);
   const playerRef = useRef<any>(null);
   const handleTimeUpdate = (current: number, duration: number) => {
-    if (!duration) return;
+    if (!duration || !isTracking) return; // 🔹 chặn update progress nếu tạm dừng
 
     let percent = Math.floor((current / duration) * 100);
-
     if (percent > 90) percent = 100;
 
-    // tránh spam DB
     if (Math.abs(percent - lastSavedRef.current) >= 5) {
       lastSavedRef.current = percent;
-
       updateProgress.mutate({
         videoId: currentVideoId,
         progress: percent,
@@ -150,14 +164,14 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
       </div>
 
       {/* 🧾 Info + controls */}
-   <VideoTopRow
-  video={video}
-  playerRef={playerRef} // 🔹 truyền xuống
-  autoNextEnabled={autoNextEnabled}
-  setAutoNextEnabledAction={setAutoNextEnabled} // ✅ đổi tên
-  loopEnabled={loopEnabled}
-  setLoopEnabledAction={setLoopEnabled}         // ✅ đổi tên
-/>
+      <VideoTopRow
+        video={video}
+        playerRef={playerRef} // 🔹 truyền xuống
+        autoNextEnabled={autoNextEnabled}
+        setAutoNextEnabledAction={setAutoNextEnabled} // ✅ đổi tên
+        loopEnabled={loopEnabled}
+        setLoopEnabledAction={setLoopEnabled} // ✅ đổi tên
+      />
 
       {/* 📌 NÚT PLAYLIST */}
       {playlist && (

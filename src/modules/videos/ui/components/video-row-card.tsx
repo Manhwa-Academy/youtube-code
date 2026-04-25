@@ -45,6 +45,7 @@ interface VideoRowCardProps extends VariantProps<typeof videoRowCardVariants> {
   data: VideoGetManyOutput["items"][number];
   onRemove?: () => void;
   progress?: number; // 🔥 thêm prop progress
+  menu?: React.ReactNode; // ✅ thêm menu prop
 }
 
 export const VideoRowCardSkeleton = ({
@@ -52,34 +53,23 @@ export const VideoRowCardSkeleton = ({
 }: VariantProps<typeof videoRowCardVariants>) => {
   return (
     <div className={videoRowCardVariants({ size })}>
-      {/* Thumbnail skeleton */}
       <div className={thumbnailVariants({ size })}>
         <VideoThumbnailSkeleton />
       </div>
-
-      {/* Info skeleton */}
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between gap-x-2">
-          <div className="flex-1 min-w-0">
-            <Skeleton
-              className={cn("h-5 w-[40%]", size === "compact" && "h-4 w-[40%]")}
-            />
-            {size === "default" && (
-              <>
-                <Skeleton className="h-4 w-[20%] mt-1" />
-                <div className="flex items-center gap-2 my-3">
-                  <Skeleton className="size-8 rounded-full" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </>
-            )}
-            {size === "compact" && (
-              <>
-                <Skeleton className="h-4 w-[50%] mt-1" />
-              </>
-            )}
-          </div>
-        </div>
+        <Skeleton
+          className={cn("h-5 w-[40%]", size === "compact" && "h-4 w-[40%]")}
+        />
+        {size === "default" && (
+          <>
+            <Skeleton className="h-4 w-[20%] mt-1" />
+            <div className="flex items-center gap-2 my-3">
+              <Skeleton className="size-8 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </>
+        )}
+        {size === "compact" && <Skeleton className="h-4 w-[50%] mt-1" />}
       </div>
     </div>
   );
@@ -89,22 +79,28 @@ export const VideoRowCard = ({
   data,
   size = "default",
   onRemove,
-  progress = 0, // 🔥 default 0
+  progress = 0,
+  menu, // ✅ nhận menu
 }: VideoRowCardProps) => {
-  const compactViews = useMemo(() => {
-    return Intl.NumberFormat("vi-VN", {
-      notation: "compact",
-    }).format(data.viewCount);
-  }, [data.viewCount]);
+  const compactViews = useMemo(
+    () =>
+      Intl.NumberFormat("vi-VN", {
+        notation: "compact",
+      }).format(data.viewCount),
+    [data.viewCount],
+  );
 
-  const compactLikes = useMemo(() => {
-    return Intl.NumberFormat("vi-VN", {
-      notation: "compact",
-    }).format(data.likeCount);
-  }, [data.likeCount]);
+  const compactLikes = useMemo(
+    () =>
+      Intl.NumberFormat("vi-VN", {
+        notation: "compact",
+      }).format(data.likeCount),
+    [data.likeCount],
+  );
 
   return (
     <div className={videoRowCardVariants({ size })}>
+      {/* Thumbnail */}
       <Link
         prefetch
         href={`/videos/${data.id}`}
@@ -120,7 +116,10 @@ export const VideoRowCard = ({
       </Link>
 
       {/* Info */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 relative">
+        {/* Menu góc trên phải */}
+        {menu && <div className="absolute top-2 right-2 z-10">{menu}</div>}
+
         <div className="flex justify-between gap-x-2">
           <Link prefetch href={`/videos/${data.id}`} className="flex-1 min-w-0">
             <h3
@@ -131,11 +130,11 @@ export const VideoRowCard = ({
             >
               {data.title}
             </h3>
-            {size === "default" && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {compactViews} lượt xem • {compactLikes} lượt thích
-              </p>
-            )}
+
+            <p className="text-xs text-muted-foreground mt-1">
+              {compactViews} lượt xem • {compactLikes} lượt thích
+            </p>
+
             {size === "default" && (
               <>
                 <div className="flex items-center gap-2 my-3">
@@ -162,16 +161,14 @@ export const VideoRowCard = ({
                 </Tooltip>
               </>
             )}
+
             {size === "compact" && <UserInfo size="sm" name={data.user.name} />}
-            {size === "compact" && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {compactViews} lượt xem • {compactLikes} lượt thích
-              </p>
-            )}
           </Link>
-          <div className="flex-none">
+
+          {/* Nếu không dùng children nữa, menu xuất qua prop */}
+          {!menu && onRemove && (
             <VideoMenu videoId={data.id} onRemove={onRemove} />
-          </div>
+          )}
         </div>
       </div>
     </div>

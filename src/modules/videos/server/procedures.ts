@@ -619,22 +619,24 @@ export const videosRouter = createTRPCRouter({
   create: protectedProcedure.mutation(async ({ ctx }) => {
     const { id: userId } = ctx.user;
 
-    // Tạo upload + asset SD ngay lập tức
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         passthrough: userId,
         playback_policy: ["public"],
-        mp4_support: "standard", // ⚡ SD 480p
         input: [
           {
-            generated_subtitles: [{ language_code: "en", name: "English" }],
+            generated_subtitles: [
+              {
+                language_code: "en",
+                name: "English",
+              },
+            ],
           },
         ],
       },
-      cors_origin: "*", // Production URL nếu cần
+      cors_origin: "*", // TODO: In production, set to your url
     });
 
-    // Lưu record video
     const [video] = await db
       .insert(videos)
       .values({

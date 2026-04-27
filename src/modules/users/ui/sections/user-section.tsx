@@ -16,7 +16,7 @@ interface UserSectionProps {
 export const UserSection = (props: UserSectionProps) => {
   return (
     <Suspense fallback={<UserSectionSkeleton />}>
-      <ErrorBoundary fallback={<p>Error</p>}>
+      <ErrorBoundary fallback={<p>Lỗi khi tải thông tin người dùng</p>}>
         <UserSectionSuspense {...props} />
       </ErrorBoundary>
     </Suspense>

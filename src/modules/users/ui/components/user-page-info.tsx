@@ -71,7 +71,7 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold">{user.name}</h1>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-              <span>{user.subscriberCount} subscribers</span>
+              <span>{user.subscriberCount} người đăng ký</span>
               <span>&bull;</span>
               <span>{user.videoCount} videos</span>
             </div>
@@ -83,7 +83,7 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
             asChild
             className="w-full mt-3 rounded-full"
           >
-            <Link prefetch href="/studio">Go to studio</Link>
+            <Link prefetch href="/studio">Đi đến studio</Link>
           </Button>
         ) : (
           <SubscriptionButton
@@ -111,7 +111,7 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
         <div className="flex-1 min-w-0">
           <h1 className="text-4xl font-bold">{user.name}</h1>
           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-3">
-            <span>{user.subscriberCount} subscribers</span>
+            <span>{user.subscriberCount} người đăng ký</span>
             <span>&bull;</span>
             <span>{user.videoCount} videos</span>
           </div>
@@ -121,7 +121,7 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
               asChild
               className="mt-3 rounded-full"
             >
-              <Link prefetch href="/studio">Go to studio</Link>
+              <Link prefetch href="/studio">Đi đến studio</Link>
             </Button>
           ) : (
             <SubscriptionButton

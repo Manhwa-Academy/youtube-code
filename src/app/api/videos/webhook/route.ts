@@ -45,14 +45,14 @@ export const POST = async (request: Request) => {
   mux.webhooks.verifySignature(
     JSON.stringify(payload),
     { "mux-signature": muxSignature },
-    SIGNING_SECRET
+    SIGNING_SECRET,
   );
 
   // Helper: update video với type an toàn
   const updateVideo = async (
     muxStatus: string,
     updateFields: VideoUpdate = {},
-    uploadId?: string
+    uploadId?: string,
   ) => {
     if (!uploadId) return;
     await db
@@ -89,8 +89,8 @@ export const POST = async (request: Request) => {
         const height = 720;
 
         const [thumb, prev] = await utapi.uploadFilesFromUrl([
-          `https://image.mux.com/${playbackId}/thumbnail.png?width=${width}&height=${height}&time=${randomPercent}`,
-          `https://image.mux.com/${playbackId}/animated.gif`,
+          `https://image.mux.com/${playbackId}/thumbnail.png?width=1280&height=720&time=${randomPercent}`,
+          `https://image.mux.com/${playbackId}/animated.gif?width=480&height=270`, // resize GIF
         ]);
 
         if (thumb.data) {
@@ -116,7 +116,7 @@ export const POST = async (request: Request) => {
           previewKey,
           duration,
         },
-        data.upload_id
+        data.upload_id,
       );
 
       console.log("Video ready:", data.upload_id);

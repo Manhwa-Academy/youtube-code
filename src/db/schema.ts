@@ -45,6 +45,7 @@ export const users = pgTable(
     trackHistory: boolean("track_history").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    bio: text("bio"), // optional, có thể null
   },
   (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)],
 );

@@ -43,9 +43,10 @@ export const users = pgTable(
     bannerKey: text("banner_key"),
     imageUrl: text("image_url").notNull(),
     trackHistory: boolean("track_history").default(true).notNull(),
+
+    bio: text("bio"), // ← THÊM DÒNG NÀY
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    bio: text("bio"), // optional, có thể null
   },
   (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)],
 );
@@ -107,6 +108,7 @@ export const videos = pgTable("videos", {
   }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  viewsCount: integer("views_count").default(0).notNull(),
 });
 
 export const videoSelectSchema = createSelectSchema(videos);

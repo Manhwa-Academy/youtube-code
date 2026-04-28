@@ -1,12 +1,5 @@
 import { z } from "zod";
-import {
-  eq,
-  and,
-  getTableColumns,
-  not,
-  inArray,
-  sql,
-} from "drizzle-orm";
+import { eq, and, getTableColumns, not, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { TRPCError } from "@trpc/server";
@@ -19,7 +12,7 @@ export const suggestionsRouter = createTRPCRouter({
       z.object({
         videoId: z.string().uuid(),
         limit: z.number().min(1).max(20).default(5),
-        excludeIds: z.array(z.string().uuid()).optional(), 
+        excludeIds: z.array(z.string().uuid()).optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -53,8 +46,8 @@ export const suggestionsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(videos),
           user: users,
-          progress: videoViews.progress,
-          viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+          progress: videoViews.progress, // 🔹 progress user hiện tại
+          viewCount: videos.viewsCount, // 🔹 tổng viewCount
           likeCount: db.$count(
             videoReactions,
             and(
@@ -77,9 +70,9 @@ export const suggestionsRouter = createTRPCRouter({
           viewerId
             ? and(
                 eq(videoViews.videoId, videos.id),
-                eq(videoViews.userId, viewerId)
+                eq(videoViews.userId, viewerId),
               )
-            : undefined
+            : undefined,
         )
         .where(
           and(
@@ -87,8 +80,8 @@ export const suggestionsRouter = createTRPCRouter({
             existingVideo.categoryId
               ? eq(videos.categoryId, existingVideo.categoryId)
               : undefined,
-            not(inArray(videos.id, excluded))
-          )
+            not(inArray(videos.id, excluded)),
+          ),
         )
         .orderBy(sql`RANDOM()`)
         .limit(limit);
@@ -104,7 +97,7 @@ export const suggestionsRouter = createTRPCRouter({
           ...getTableColumns(videos),
           user: users,
           progress: videoViews.progress,
-          viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+          viewCount: videos.viewsCount,
           likeCount: db.$count(
             videoReactions,
             and(
@@ -127,15 +120,15 @@ export const suggestionsRouter = createTRPCRouter({
           viewerId
             ? and(
                 eq(videoViews.videoId, videos.id),
-                eq(videoViews.userId, viewerId)
+                eq(videoViews.userId, viewerId),
               )
-            : undefined
+            : undefined,
         )
         .where(
           and(
             eq(videos.visibility, "public"),
-            not(inArray(videos.id, excluded))
-          )
+            not(inArray(videos.id, excluded)),
+          ),
         )
         .orderBy(sql`RANDOM()`)
         .limit(limit - sameCategory.length);

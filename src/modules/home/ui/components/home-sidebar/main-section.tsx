@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { FlameIcon, HomeIcon, PlaySquareIcon } from "lucide-react";
+import { FlameIcon, HomeIcon, PlaySquareIcon, VideoIcon  } from "lucide-react";
 
 import {
   SidebarGroup,
@@ -31,8 +31,12 @@ const items = [
     url: "/feed/trending",
     icon: FlameIcon,
   },
+  {
+    title: "Shorts", // <-- thêm mục mới
+    url: "/feed/shorts", // đường dẫn bạn muốn
+    icon: VideoIcon, // bạn có thể đổi icon khác nếu muốn
+  },
 ];
-
 export const MainSection = () => {
   const clerk = useClerk();
   const { isSignedIn } = useAuth();
